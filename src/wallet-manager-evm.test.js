@@ -1,4 +1,7 @@
 import { describe, test, expect } from '@jest/globals'
+
+import { wordlists } from 'ethers'
+
 import WalletManagerEvm from './wallet-manager-evm.js'
 import WalletAccountEvm from './wallet-account-evm.js'
 
@@ -16,16 +19,21 @@ describe('WalletManagerEvm', () => {
   describe('static getRandomSeedPhrase', () => {
     test('generates a valid 12-word seed phrase', () => {
       const seedPhrase = WalletManagerEvm.getRandomSeedPhrase()
-
-      expect(WalletManagerEvm.isValidSeedPhrase(seedPhrase)).toBe(true)
-
       const words = seedPhrase.trim().split(/\s+/)
-      expect(words.length).toBe(12)
 
-      words.forEach(word => {
-        expect(typeof word).toBe('string')
-        expect(word.length).toBeGreaterThan(0)
-      })
+      expect(words).toHaveLength(12)
+
+      words.forEach(word => expect(wordlists.en.getWordIndex(word)).not.toBe(-1))
+    })
+
+    test('validates a valid seed phrase', () => {
+      expect(WalletManagerEvm.isValidSeedPhrase(VALID_SEED_PHRASE))
+        .toBe(true)
+    })
+
+    test('invalidates an invalid seed phrase', () => {
+      expect(WalletManagerEvm.isValidSeedPhrase(INVALID_SEED_PHRASE))
+        .toBe(false)
     })
   })
 
