@@ -80,11 +80,11 @@ export default class WalletManagerEvm {
    *
    * @example
    * // Returns the account with derivation path m/44'/60'/0'/0/1
-   * const account = wallet.getAccount(1);
+   * const account = await wallet.getAccount(1);
    * @param {number} [index] - The index of the account to get (default: 0).
-   * @returns {WalletAccountEvm} The account.
+   * @returns {Promise<WalletAccountEvm>} The account.
   */
-  getAccount (index = 0) {
+  async getAccount (index = 0) {
     const account = this.#wallet.derivePath(index.toString())
 
     return new WalletAccountEvm(account)

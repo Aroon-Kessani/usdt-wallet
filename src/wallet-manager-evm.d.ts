@@ -33,11 +33,11 @@ export default class WalletManagerEvm {
      *
      * @example
      * // Returns the account with derivation path m/44'/60'/0'/0/1
-     * const account = wallet.getAccount(1);
+     * const account = await wallet.getAccount(1);
      * @param {number} [index] - The index of the account to get (default: 0).
-     * @returns {WalletAccountEvm} The account.
+     * @returns {Promise<WalletAccountEvm>} The account.
     */
-    getAccount(index?: number): WalletAccountEvm;
+    getAccount(index?: number): Promise<WalletAccountEvm>;
     #private;
 }
 import WalletAccountEvm from './wallet-account-evm.js';
