@@ -30,6 +30,13 @@ export default class WalletManagerEvm {
     */
     get seedPhrase(): string;
     /**
+     * Returns the wallet account at a specific BIP-44 derivation path.
+     *
+     * @param {string} path - The derivation path (e.g. "0'/0/0").
+     * @returns {Promise<WalletAccountEvm>} The account.
+     */
+    getAccountByPath(path: string): Promise<WalletAccountEvm>;
+    /**
      * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
      *
      * @example
@@ -47,4 +54,3 @@ export type EvmWalletConfig = {
      */
     rpcUrl?: string;
 };
-import WalletAccountEvm from './wallet-account-evm.js';

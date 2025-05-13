@@ -17,7 +17,7 @@ import { HDNodeWallet, Mnemonic, JsonRpcProvider } from 'ethers'
 
 import WalletAccountEvm from './wallet-account-evm.js'
 
-const BIP_44_ETH_DERIVATION_PATH_BASE = 'm/44\'/60\'/0\'/0'
+const BIP_44_ETH_DERIVATION_PATH_BASE = "m/44'/60'"
 
 /**
  * @typedef {Object} EvmWalletConfig
@@ -80,6 +80,18 @@ export default class WalletManagerEvm {
   }
 
   /**
+   * Returns the wallet account at a specific BIP-44 derivation path.
+   *
+   * @param {string} path - The derivation path (e.g. "0'/0/0").
+   * @returns {Promise<WalletAccountEvm>} The account.
+   */
+  async getAccountByPath (path) {
+    const account = this.#wallet.derivePath(path)
+
+    return new WalletAccountEvm(account)
+  }
+
+  /**
    * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
    *
    * @example
@@ -89,8 +101,6 @@ export default class WalletManagerEvm {
    * @returns {Promise<WalletAccountEvm>} The account.
   */
   async getAccount (index = 0) {
-    const account = this.#wallet.derivePath(index.toString())
-
-    return new WalletAccountEvm(account)
+    return await this.getAccountByPath(`0'/0/${index}`)
   }
 }
