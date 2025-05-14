@@ -71,10 +71,10 @@ export default class WalletAccountEvm {
 
   /**
    * Returns the account's address.
-   * 
+   *
    * @returns {Promise<string>} The account's address.
    */
-  async getAddress() {
+  async getAddress () {
     return this.#account.address
   }
 
@@ -118,6 +118,41 @@ export default class WalletAccountEvm {
   }
 
   /**
+   * Quotes a transaction.
+   *
+   * @param {EvmTransaction} tx - The transaction to quote.
+   * @returns {Promise<number>} The transaction’s fee (in weis).
+   */
+  async quoteTransaction (tx) {
+    if (!this.#account.provider) {
+      throw new Error('The wallet must be connected to a provider to quote transactions.')
+    }
+
+    const gasLimit = await this.#account.provider.estimateGas(tx)
+    const feeData = await this.#account.provider.getFeeData()
+
+    return Number(gasLimit * feeData.maxFeePerGas)
+  }
+
+  /**
+   * Returns the current fee rates.
+   *
+   * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in weis).
+   */
+  async getFeeRates () {
+    if (!this.#account.provider) {
+      throw new Error('The wallet must be connected to a provider to get fee rates.')
+    }
+
+    const { maxFeePerGas } = await this.#account.provider.getFeeData()
+
+    return {
+      normal: maxFeePerGas * 1.1,
+      fast: maxFeePerGas * 2.0
+    }
+  }
+
+  /**
    * Returns the account's native token balance.
    *
    * @returns {Promise<number>} The native token balance.
@@ -143,7 +178,7 @@ export default class WalletAccountEvm {
       throw new Error('The wallet must be connected to a provider to retrieve token balances.')
     }
 
-    const abi = [ 'function balanceOf(address owner) view returns (uint256)' ]
+    const abi = ['function balanceOf(address owner) view returns (uint256)']
     const token = new Contract(tokenAddress, abi, this.#account.provider)
     const balance = await token.balanceOf(await this.getAddress())
 
