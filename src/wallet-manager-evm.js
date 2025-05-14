@@ -19,6 +19,9 @@ import WalletAccountEvm from './wallet-account-evm.js'
 
 const BIP_44_ETH_DERIVATION_PATH_BASE = "m/44'/60'"
 
+const FEE_RATE_NORMAL_MULTIPLIER = 1.1,
+      FEE_RATE_FAST_MULTIPLIER = 2.0
+
 /**
  * @typedef {Object} EvmWalletConfig
  * @property {string} [rpcUrl] - The url of the rpc provider.
@@ -26,6 +29,7 @@ const BIP_44_ETH_DERIVATION_PATH_BASE = "m/44'/60'"
 
 export default class WalletManagerEvm {
   #wallet
+  #provider
 
   /**
    * Creates a new wallet manager for evm blockchains.
@@ -46,6 +50,8 @@ export default class WalletManagerEvm {
       const provider = new JsonRpcProvider(rpcUrl)
 
       this.#wallet = this.#wallet.connect(provider)
+
+      this.#provider = provider
     }
   }
 
@@ -80,6 +86,19 @@ export default class WalletManagerEvm {
   }
 
   /**
+   * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
+   *
+   * @example
+   * // Returns the account with derivation path m/44'/60'/0'/0/1
+   * const account = await wallet.getAccount(1);
+   * @param {number} [index] - The index of the account to get (default: 0).
+   * @returns {Promise<WalletAccountEvm>} The account.
+  */
+  async getAccount (index = 0) {
+    return await this.getAccountByPath(`0'/0/${index}`)
+  }
+
+  /**
    * Returns the wallet account at a specific BIP-44 derivation path.
    *
    * @param {string} path - The derivation path (e.g. "0'/0/0").
@@ -92,15 +111,22 @@ export default class WalletManagerEvm {
   }
 
   /**
-   * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
+   * Returns the current fee rates.
    *
-   * @example
-   * // Returns the account with derivation path m/44'/60'/0'/0/1
-   * const account = await wallet.getAccount(1);
-   * @param {number} [index] - The index of the account to get (default: 0).
-   * @returns {Promise<WalletAccountEvm>} The account.
-  */
-  async getAccount (index = 0) {
-    return await this.getAccountByPath(`0'/0/${index}`)
+   * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in weis).
+   */
+  async getFeeRates () {
+    if (!this.#provider) {
+      throw new Error('The wallet must be connected to a provider to get fee rates.')
+    }
+
+    const feeData = await this.#provider.getFeeData()
+
+    const maxFeePerGas = Number(feeData.maxFeePerGas)
+
+    return {
+      normal: Math.round(maxFeePerGas * FEE_RATE_NORMAL_MULTIPLIER),
+      fast: maxFeePerGas * FEE_RATE_FAST_MULTIPLIER
+    }
   }
 }

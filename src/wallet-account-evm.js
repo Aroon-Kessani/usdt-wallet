@@ -129,27 +129,9 @@ export default class WalletAccountEvm {
     }
 
     const gasLimit = await this.#account.provider.estimateGas(tx)
-    const feeData = await this.#account.provider.getFeeData()
-
-    return Number(gasLimit * feeData.maxFeePerGas)
-  }
-
-  /**
-   * Returns the current fee rates.
-   *
-   * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in weis).
-   */
-  async getFeeRates () {
-    if (!this.#account.provider) {
-      throw new Error('The wallet must be connected to a provider to get fee rates.')
-    }
-
     const { maxFeePerGas } = await this.#account.provider.getFeeData()
 
-    return {
-      normal: maxFeePerGas * 1.1,
-      fast: maxFeePerGas * 2.0
-    }
+    return Number(gasLimit * maxFeePerGas)
   }
 
   /**

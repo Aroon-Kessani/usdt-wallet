@@ -30,13 +30,6 @@ export default class WalletManagerEvm {
     */
     get seedPhrase(): string;
     /**
-     * Returns the wallet account at a specific BIP-44 derivation path.
-     *
-     * @param {string} path - The derivation path (e.g. "0'/0/0").
-     * @returns {Promise<WalletAccountEvm>} The account.
-     */
-    getAccountByPath(path: string): Promise<WalletAccountEvm>;
-    /**
      * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
      *
      * @example
@@ -46,6 +39,22 @@ export default class WalletManagerEvm {
      * @returns {Promise<WalletAccountEvm>} The account.
     */
     getAccount(index?: number): Promise<WalletAccountEvm>;
+    /**
+     * Returns the wallet account at a specific BIP-44 derivation path.
+     *
+     * @param {string} path - The derivation path (e.g. "0'/0/0").
+     * @returns {Promise<WalletAccountEvm>} The account.
+     */
+    getAccountByPath(path: string): Promise<WalletAccountEvm>;
+    /**
+     * Returns the current fee rates.
+     *
+     * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in weis).
+     */
+    getFeeRates(): Promise<{
+        normal: number;
+        fast: number;
+    }>;
     #private;
 }
 export type EvmWalletConfig = {
