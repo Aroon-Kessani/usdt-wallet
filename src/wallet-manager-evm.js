@@ -11,13 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 'use strict'
 
 import { HDNodeWallet, Mnemonic, JsonRpcProvider } from 'ethers'
-
 import WalletAccountEvm from './wallet-account-evm.js'
 
-const BIP_44_ETH_DERIVATION_PATH_BASE = "m/44'/60'"
+const BIP_44_ETH_DERIVATION_PATH_BASE = "m/44'/60'/0'/0"
 
 const FEE_RATE_NORMAL_MULTIPLIER = 1.1,
       FEE_RATE_FAST_MULTIPLIER = 2.0
@@ -28,7 +28,7 @@ const FEE_RATE_NORMAL_MULTIPLIER = 1.1,
  */
 
 export default class WalletManagerEvm {
-  #wallet
+  #seedPhrase
   #provider
 
   /**
@@ -38,20 +38,16 @@ export default class WalletManagerEvm {
    * @param {EvmWalletConfig} [config] - The configuration object.
    */
   constructor (seedPhrase, config = {}) {
-    const { rpcUrl } = config
-
     if (!WalletManagerEvm.isValidSeedPhrase(seedPhrase)) {
       throw new Error('Seed phrase is invalid.')
     }
 
-    this.#wallet = HDNodeWallet.fromPhrase(seedPhrase, undefined, BIP_44_ETH_DERIVATION_PATH_BASE)
+    this.#seedPhrase = seedPhrase
+
+    const { rpcUrl } = config
 
     if (rpcUrl) {
-      const provider = new JsonRpcProvider(rpcUrl)
-
-      this.#wallet = this.#wallet.connect(provider)
-
-      this.#provider = provider
+      this.#provider = new JsonRpcProvider(rpcUrl)
     }
   }
 
@@ -59,10 +55,9 @@ export default class WalletManagerEvm {
    * Returns a random [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
    *
    * @returns {string} The seed phrase.
-  */
+   */
   static getRandomSeedPhrase () {
     const wallet = HDNodeWallet.createRandom()
-
     return wallet.mnemonic.phrase
   }
 
@@ -71,18 +66,18 @@ export default class WalletManagerEvm {
    *
    * @param {string} seedPhrase - The seed phrase.
    * @returns {boolean} True if the seed phrase is valid.
-  */
+   */
   static isValidSeedPhrase (seedPhrase) {
     return Mnemonic.isValidMnemonic(seedPhrase)
   }
 
   /**
-  * The seed phrase of the wallet.
-  *
-  * @type {string}
-  */
+   * The seed phrase of the wallet.
+   *
+   * @type {string}
+   */
   get seedPhrase () {
-    return this.#wallet.mnemonic.phrase
+    return this.#seedPhrase
   }
 
   /**
@@ -91,23 +86,24 @@ export default class WalletManagerEvm {
    * @example
    * // Returns the account with derivation path m/44'/60'/0'/0/1
    * const account = await wallet.getAccount(1);
-   * @param {number} [index] - The index of the account to get (default: 0).
+   * @param {number} index - The index of the account to get (default: 0).
    * @returns {Promise<WalletAccountEvm>} The account.
-  */
+   */
   async getAccount (index = 0) {
-    return await this.getAccountByPath(`0'/0/${index}`)
+    return await this.getAccountByPath(`0/${index}`)
   }
 
   /**
    * Returns the wallet account at a specific BIP-44 derivation path.
    *
-   * @param {string} path - The derivation path (e.g. "0'/0/0").
+   * @param {string} path - The derivation path suffix (e.g. "0/0").
    * @returns {Promise<WalletAccountEvm>} The account.
    */
   async getAccountByPath (path) {
-    const account = this.#wallet.derivePath(path)
-
-    return new WalletAccountEvm(account)
+    const fullPath = `${BIP_44_ETH_DERIVATION_PATH_BASE}/${path}`
+    return new WalletAccountEvm(this.#seedPhrase, fullPath, {
+      rpcUrl: this.#provider?.connection?.url
+    })
   }
 
   /**
@@ -121,7 +117,6 @@ export default class WalletManagerEvm {
     }
 
     const feeData = await this.#provider.getFeeData()
-
     const maxFeePerGas = Number(feeData.maxFeePerGas)
 
     return {

@@ -29,8 +29,8 @@ import { HDNodeWallet, JsonRpcProvider, Contract, verifyMessage } from 'ethers'
  * @property {string} [data] - The transaction's data in hex format.
  * @property {number} [gasLimit] - The maximum amount of gas this transaction is permitted to use.
  * @property {number} [gasPrice] - The price (in wei) per unit of gas this transaction will pay.
- * @property {number} [maxFeePerGas] - The maximum price (in wei) per unit of gas this transaction will pay for the combined [eip-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee and this transaction's priority fee.
- * @property {number} [maxPriorityFeePerGas] - The price (in wei) per unit of gas this transaction will allow in addition to the [eip-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee to bribe miners into giving this transaction priority. This is included in the maxFeePerGas, so this will not affect the total maximum cost set with maxFeePerGas.
+ * @property {number} [maxFeePerGas] - The maximum price (in wei) per unit of gas this transaction will pay for the combined [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee and this transaction's priority fee.
+ * @property {number} [maxPriorityFeePerGas] - The price (in wei) per unit of gas this transaction will allow in addition to the [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee to bribe miners into giving this transaction priority. This is included in the maxFeePerGas, so this will not affect the total maximum cost set with maxFeePerGas.
  */
 
 /**
@@ -91,7 +91,7 @@ export default class WalletAccountEvm {
   }
 
   /**
-   * The derivation path of this account (see [bip-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
+   * The derivation path of this account (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
    *
    * @type {number}
    */
@@ -114,9 +114,9 @@ export default class WalletAccountEvm {
   /**
    * Returns the account's address.
    *
-   * @returns {Promise<string>} The account's address.
+   * @returns {string} The account's address.
    */
-  async getAddress () {
+  getAddress () {
     return this.#account.address
   }
 
@@ -139,7 +139,6 @@ export default class WalletAccountEvm {
    */
   async verify (message, signature) {
     const address = await verifyMessage(message, signature)
-
     return address.toLowerCase() === this.#account.address.toLowerCase()
   }
 
@@ -155,7 +154,6 @@ export default class WalletAccountEvm {
     }
 
     const { hash } = await this.#account.sendTransaction(tx)
-
     return hash
   }
 
@@ -172,7 +170,6 @@ export default class WalletAccountEvm {
 
     const gasLimit = await this.#account.provider.estimateGas(tx)
     const { maxFeePerGas } = await this.#account.provider.getFeeData()
-
     return Number(gasLimit * maxFeePerGas)
   }
 
@@ -186,8 +183,7 @@ export default class WalletAccountEvm {
       throw new Error('The wallet must be connected to a provider to retrieve balances.')
     }
 
-    const balance = await this.#account.provider.getBalance(await this.getAddress())
-
+    const balance = await this.#account.provider.getBalance(this.getAddress())
     return Number(balance)
   }
 
@@ -204,8 +200,7 @@ export default class WalletAccountEvm {
 
     const abi = ['function balanceOf(address owner) view returns (uint256)']
     const token = new Contract(tokenAddress, abi, this.#account.provider)
-    const balance = await token.balanceOf(await this.getAddress())
-
+    const balance = await token.balanceOf(this.getAddress())
     return Number(balance)
   }
 }
