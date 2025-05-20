@@ -1,20 +1,12 @@
-/**
- * @typedef {Object} KeyPair
- * @property {string} publicKey - The public key.
- * @property {string} privateKey - The private key.
- */
-/**
- * @typedef {Object} EvmTransaction
- * @property {string} to - The transaction's recipient.
- * @property {number} value - The amount of ethers to send to the recipient (in weis).
- * @property {string} [data] - The transaction's data in hex format.
- * @property {number} [gasLimit] - The maximum amount of gas this transaction is permitted to use.
- * @property {number} [gasPrice] - The price (in wei) per unit of gas this transaction will pay.
- * @property {number} [maxFeePerGas] - The maximum price (in wei) per unit of gas this transaction will pay for the combined [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee and this transaction's priority fee.
- * @property {number} [maxPriorityFeePerGas] - The price (in wei) per unit of gas this transaction will allow in addition to the [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee to bribe miners into giving this transaction priority. This is included in the maxFeePerGas, so this will not affect the total maximum cost set with maxFeePerGas.
- */
 export default class WalletAccountEvm {
-    constructor(account: any);
+    /**
+     * Creates a new evm wallet account.
+     *
+     * @param {string} seedPhrase - The bip-39 mnemonic.
+     * @param {string} path - The BIP-44 derivation path (e.g. "0'/0/0").
+     * @param {EvmWalletConfig} [config] - The configuration object.
+     */
+    constructor(seedPhrase: string, path: string, config?: EvmWalletConfig);
     /**
      * The derivation path's index of this account.
      *
@@ -24,9 +16,9 @@ export default class WalletAccountEvm {
     /**
      * The derivation path of this account (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
      *
-     * @type {number}
+     * @type {string}
      */
-    get path(): number;
+    get path(): string;
     /**
      * The account's key pair.
      *
@@ -61,6 +53,13 @@ export default class WalletAccountEvm {
      * @returns {Promise<string>} The transaction's hash.
      */
     sendTransaction(tx: EvmTransaction): Promise<string>;
+    /**
+     * Quotes a transaction.
+     *
+     * @param {EvmTransaction} tx - The transaction to quote.
+     * @returns {Promise<number>} The transaction’s fee (in weis).
+     */
+    quoteTransaction(tx: EvmTransaction): Promise<number>;
     /**
      * Returns the account's native token balance.
      *
@@ -115,4 +114,10 @@ export type EvmTransaction = {
      * - The price (in wei) per unit of gas this transaction will allow in addition to the [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee to bribe miners into giving this transaction priority. This is included in the maxFeePerGas, so this will not affect the total maximum cost set with maxFeePerGas.
      */
     maxPriorityFeePerGas?: number;
+};
+export type EvmWalletConfig = {
+    /**
+     * - The rpc url of the provider.
+     */
+    rpcUrl?: string;
 };

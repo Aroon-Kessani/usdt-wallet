@@ -15,8 +15,9 @@
 
 /** @typedef {import('./src/wallet-manager-evm.js').EvmWalletConfig} EvmWalletConfig */
 
-/** @typedef {import('./src/wallet-account-evm.js').default} WalletAccountEvm */
 /** @typedef {import('./src/wallet-account-evm.js').KeyPair} KeyPair */
 /** @typedef {import('./src/wallet-account-evm.js').EvmTransaction} EvmTransaction */
 
 export { default } from './src/wallet-manager-evm.js'
+
+export { default as WalletAccountEvm } from './src/wallet-account-evm.js'
