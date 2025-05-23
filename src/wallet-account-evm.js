@@ -88,7 +88,7 @@ export default class WalletAccountEvm {
    *
    * @type {number}
    */
-  get index () {
+  get index() {
     return this.#account.index
   }
 
@@ -97,7 +97,7 @@ export default class WalletAccountEvm {
    *
    * @type {string}
    */
-  get path () {
+  get path() {
     return this.#account.path
   }
 
@@ -106,7 +106,7 @@ export default class WalletAccountEvm {
    *
    * @type {KeyPair}
    */
-  get keyPair () {
+  get keyPair() {
     return {
       privateKey: this.#account.privateKeyBuffer,
       publicKey: this.#account.publicKeyBuffer
@@ -118,7 +118,7 @@ export default class WalletAccountEvm {
    *
    * @returns {Promise<string>} The account's address.
    */
-  async getAddress () {
+  async getAddress() {
     return this.#account.address
   }
 
@@ -128,7 +128,7 @@ export default class WalletAccountEvm {
    * @param {string} message - The message to sign.
    * @returns {Promise<string>} The message's signature.
    */
-  async sign (message) {
+  async sign(message) {
     return await this.#account.signMessage(message)
   }
 
@@ -139,7 +139,7 @@ export default class WalletAccountEvm {
    * @param {string} signature - The signature to verify.
    * @returns {Promise<boolean>} True if the signature is valid.
    */
-  async verify (message, signature) {
+  async verify(message, signature) {
     const address = await verifyMessage(message, signature)
 
     return address.toLowerCase() === this.#account.address.toLowerCase()
@@ -151,7 +151,7 @@ export default class WalletAccountEvm {
    * @param {EvmTransaction} tx - The transaction to send.
    * @returns {Promise<string>} The transaction's hash.
    */
-  async sendTransaction (tx) {
+  async sendTransaction(tx) {
     if (!this.#account.provider) {
       throw new Error('The wallet must be connected to a provider to send transactions.')
     }
@@ -167,7 +167,7 @@ export default class WalletAccountEvm {
    * @param {EvmTransaction} tx - The transaction to quote.
    * @returns {Promise<number>} The transaction’s fee (in weis).
    */
-  async quoteTransaction (tx) {
+  async quoteTransaction(tx) {
     if (!this.#account.provider) {
       throw new Error('The wallet must be connected to a provider to quote transactions.')
     }
@@ -184,7 +184,7 @@ export default class WalletAccountEvm {
    *
    * @returns {Promise<number>} The native token balance.
    */
-  async getBalance () {
+  async getBalance() {
     if (!this.#account.provider) {
       throw new Error('The wallet must be connected to a provider to retrieve balances.')
     }
@@ -200,7 +200,7 @@ export default class WalletAccountEvm {
    * @param {string} tokenAddress - The smart contract address of the token.
    * @returns {Promise<number>} The token balance.
    */
-  async getTokenBalance (tokenAddress) {
+  async getTokenBalance(tokenAddress) {
     if (!this.#account.provider) {
       throw new Error('The wallet must be connected to a provider to retrieve token balances.')
     }

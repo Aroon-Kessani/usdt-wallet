@@ -20,8 +20,8 @@ import * as bip39 from 'bip39'
 
 import WalletAccountEvm from './wallet-account-evm.js'
 
-const FEE_RATE_NORMAL_MULTIPLIER = 1.1
-const FEE_RATE_FAST_MULTIPLIER = 2.0
+const FEE_RATE_NORMAL_MULTIPLIER = 1.1,
+  FEE_RATE_FAST_MULTIPLIER = 2.0
 
 /** @typedef {import('./wallet-account-evm.js').EvmWalletConfig} EvmWalletConfig */
 
@@ -97,7 +97,7 @@ export default class WalletManagerEvm {
    * @param {number} [index] - The index of the account to get (default: 0).
    * @returns {Promise<WalletAccountEvm>} The account.
    */
-  async getAccount (index = 0) {
+  async getAccount(index = 0) {
     return await this.getAccountByPath(`0'/0/${index}`)
   }
 
@@ -125,7 +125,7 @@ export default class WalletManagerEvm {
    *
    * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in weis).
    */
-  async getFeeRates () {
+  async getFeeRates() {
     if (!this.#provider) {
       throw new Error('The wallet must be connected to a provider to get fee rates.')
     }
