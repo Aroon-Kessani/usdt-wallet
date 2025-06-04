@@ -74,10 +74,13 @@ export default class MemorySafeSigningKey extends SigningKey {
   }
 
   computeSharedSecret (other) {
-    throw new Error('Method not supported.')
+    const pubKey = SigningKey.computePublicKey(other);
+    return hexlify(secp256k1.getSharedSecret(this.#privateKeyBuffer, getBytes(pubKey), false));
   }
 
   dispose () {
     sodium_memzero(this.#privateKeyBuffer)
+
+    this.#privateKeyBuffer = undefined
   }
 }

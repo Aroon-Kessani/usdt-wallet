@@ -140,6 +140,9 @@ export default class WalletManagerEvm {
     }
   }
 
+  /**
+   * Disposes all the wallet accounts, and erases their private keys from the memory.
+   */
   dispose () {
     for (const account of Object.values(this.#accounts)) {
       account.dispose()

@@ -26,8 +26,8 @@ import MemorySafeHDNodeWallet from './memory-safe/hd-node-wallet.js'
 
 /**
  * @typedef {Object} KeyPair
- * @property {string} publicKey - The public key.
- * @property {string} privateKey - The private key.
+ * @property {Uint8Array} publicKey - The public key.
+ * @property {Uint8Array} privateKey - The private key.
  */
 
 /**
@@ -212,6 +212,9 @@ export default class WalletAccountEvm {
     return Number(balance)
   }
 
+  /**
+   * Disposes the wallet account, and erases the private key from the memory.
+   */
   dispose () {
     this.#account.dispose()
   }
