@@ -18,7 +18,7 @@ import { BrowserProvider, Contract, JsonRpcProvider, verifyMessage, Wallet } fro
 
 import * as bip39 from 'bip39'
 
-import MemorySafeSigningKey from './memory-safe-signing-key.js'
+import MemorySafeHDNodeWallet from './memory-safe/hd-node-wallet.js'
 
 /**
  * @typedef {import('ethers').Eip1193Provider} Eip1193Provider
@@ -51,7 +51,7 @@ const BIP_44_ETH_DERIVATION_PATH_PREFIX = "m/44'/60'"
 export default class WalletAccountEvm {
   #path
   #signingKey
-  #wallet
+  #account
 
   /**
    * Creates a new evm wallet account.
@@ -69,11 +69,10 @@ export default class WalletAccountEvm {
       seed = bip39.mnemonicToSeedSync(seed)
     }
 
-    this.#path = BIP_44_ETH_DERIVATION_PATH_PREFIX + '/' + path
+    path = BIP_44_ETH_DERIVATION_PATH_PREFIX + '/' + path
 
-    this.#signingKey = MemorySafeSigningKey.from(seed, this.#path)
-
-    this.#wallet = new Wallet(this.#signingKey)
+    this.#account = MemorySafeHDNodeWallet.fromSeed(seed)
+      .derivePath(path)
 
     let { provider } = config
 
@@ -82,7 +81,7 @@ export default class WalletAccountEvm {
         ? new JsonRpcProvider(provider)
         : new BrowserProvider(provider)
 
-      this.#wallet = this.#wallet.connect(provider)
+      this.#account = this.#account.connect(provider)
     }
   }
 
@@ -122,7 +121,7 @@ export default class WalletAccountEvm {
    * @returns {Promise<string>} The account's address.
    */
   async getAddress () {
-    return this.#wallet.address
+    return this.#account.address
   }
 
   /**
@@ -132,7 +131,7 @@ export default class WalletAccountEvm {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
-    return await this.#wallet.signMessage(message)
+    return await this.#account.signMessage(message)
   }
 
   /**
@@ -145,7 +144,7 @@ export default class WalletAccountEvm {
   async verify (message, signature) {
     const address = await verifyMessage(message, signature)
 
-    return address.toLowerCase() === this.#wallet.address.toLowerCase()
+    return address.toLowerCase() === this.#account.address.toLowerCase()
   }
 
   /**
@@ -155,11 +154,11 @@ export default class WalletAccountEvm {
    * @returns {Promise<string>} The transaction's hash.
    */
   async sendTransaction (tx) {
-    if (!this.#wallet.provider) {
+    if (!this.#account.provider) {
       throw new Error('The wallet must be connected to a provider to send transactions.')
     }
 
-    const { hash } = await this.#wallet.sendTransaction(tx)
+    const { hash } = await this.#account.sendTransaction(tx)
 
     return hash
   }
@@ -171,13 +170,13 @@ export default class WalletAccountEvm {
    * @returns {Promise<number>} The transaction’s fee (in weis).
    */
   async quoteTransaction (tx) {
-    if (!this.#wallet.provider) {
+    if (!this.#account.provider) {
       throw new Error('The wallet must be connected to a provider to quote transactions.')
     }
 
-    const gasLimit = await this.#wallet.provider.estimateGas(tx)
+    const gasLimit = await this.#account.provider.estimateGas(tx)
 
-    const { maxFeePerGas } = await this.#wallet.provider.getFeeData()
+    const { maxFeePerGas } = await this.#account.provider.getFeeData()
 
     return Number(gasLimit * maxFeePerGas)
   }
@@ -188,11 +187,11 @@ export default class WalletAccountEvm {
    * @returns {Promise<number>} The native token balance.
    */
   async getBalance () {
-    if (!this.#wallet.provider) {
+    if (!this.#account.provider) {
       throw new Error('The wallet must be connected to a provider to retrieve balances.')
     }
 
-    const balance = await this.#wallet.provider.getBalance(await this.getAddress())
+    const balance = await this.#account.provider.getBalance(await this.getAddress())
 
     return Number(balance)
   }
@@ -204,18 +203,18 @@ export default class WalletAccountEvm {
    * @returns {Promise<number>} The token balance.
    */
   async getTokenBalance (tokenAddress) {
-    if (!this.#wallet.provider) {
+    if (!this.#account.provider) {
       throw new Error('The wallet must be connected to a provider to retrieve token balances.')
     }
 
     const abi = ['function balanceOf(address owner) view returns (uint256)']
-    const token = new Contract(tokenAddress, abi, this.#wallet.provider)
+    const token = new Contract(tokenAddress, abi, this.#account.provider)
     const balance = await token.balanceOf(await this.getAddress())
 
     return Number(balance)
   }
 
   dispose () {
-    this.#signingKey.dispose()
+    this.#account.dispose()
   }
 }
