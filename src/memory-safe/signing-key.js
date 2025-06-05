@@ -20,8 +20,13 @@ import { assertArgument, dataLength, getBytesCopy, Signature, SigningKey, toBeHe
 import { sodium_memzero } from 'sodium-universal'
 
 import * as secp256k1 from '@noble/secp256k1'
+import { hmac } from '@noble/hashes/hmac'
+import { sha256 } from '@noble/hashes/sha2'
 
 const NULL = '0x0000000000000000000000000000000000000000000000000000000000000000'
+
+secp256k1.etc.hmacSha256Sync = (key, ...messages) =>
+  hmac(sha256, key, secp256k1.etc.concatBytes(...messages))
 
 export default class MemorySafeSigningKey extends SigningKey {
   #privateKeyBuffer
