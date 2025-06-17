@@ -4,7 +4,7 @@ import { ContractFactory } from 'ethers'
 
 import * as bip39 from 'bip39'
 
-import { afterEach, beforeAll, beforeEach, describe, expect, test } from '@jest/globals'
+import { afterEach, beforeEach, describe, expect, test } from '@jest/globals'
 
 import { WalletAccountEvm } from '../index.js'
 
@@ -42,7 +42,7 @@ describe('WalletAccountEvm', () => {
   let testToken,
       account
 
-  async function giveEthersTo(recipient, value) {
+  async function giveEthersTo (recipient, value) {
     const [signer] = await hre.ethers.getSigners()
 
     const transaction = await signer.sendTransaction({
@@ -53,7 +53,7 @@ describe('WalletAccountEvm', () => {
     await transaction.wait()
   }
 
-  async function giveTestTokensTo(recipient, value) {
+  async function giveTestTokensTo (recipient, value) {
     const transaction = await testToken.transfer(
       recipient,
       value
@@ -315,7 +315,7 @@ describe('WalletAccountEvm', () => {
         recipient: '0xa460AEbce0d3A4BecAd8ccf9D6D4861296c503Bd',
         amount: 100
       }
-      
+
       const account = new WalletAccountEvm(SEED_PHRASE, "0'/0/0", {
         provider: hre.network.provider,
         transferMaxFee: 0

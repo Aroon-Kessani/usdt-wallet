@@ -1,16 +1,10 @@
 import hre from 'hardhat'
 
-import * as bip39 from 'bip39'
-
 import { afterEach, beforeEach, describe, expect, test } from '@jest/globals'
 
 import WalletManagerEvm, { WalletAccountEvm } from '../index.js'
 
 const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
-
-const INVALID_SEED_PHRASE = 'invalid seed phrase'
-
-const SEED = bip39.mnemonicToSeedSync(SEED_PHRASE)
 
 describe('WalletManagerEvm', () => {
   let wallet
