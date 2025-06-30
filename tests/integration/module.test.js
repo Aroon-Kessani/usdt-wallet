@@ -4,7 +4,7 @@ import { ContractFactory } from 'ethers'
 
 import * as bip39 from 'bip39'
 
-import { afterEach, beforeEach, describe, expect, test } from '@jest/globals'
+import { describe, expect, test, beforeAll, afterAll } from '@jest/globals'
 
 import WalletManagerEvm, { WalletAccountEvm } from '../../index.js'
 
@@ -49,23 +49,7 @@ async function deployTestToken () {
 }
 
 describe('Integration tests', () => {
-  let testToken,
-      account
-
-  beforeEach(async () => {
-    await hre.network.provider.send('hardhat_reset')
-
-    testToken = await deployTestToken()
-
-    account = new WalletAccountEvm(SEED_PHRASE, "0'/0/0", {
-      provider: hre.network.provider
-    })
-  })
-
-  afterEach(() => {
-    account.dispose()
-  })
-
+    
 // a) Creates a wallet, derives account at index 0, 
 // quotes the cost of sending x ethers to another address, 
 // sends x ethers to another address, 
@@ -75,9 +59,20 @@ describe('Integration tests', () => {
 
     let wallet;
     let account0, account1;
-
     let txAmount = 1_000;
     let estimatedFee;
+    let startBalance0;
+    let startBalance1;
+    let actualFee;
+
+    beforeAll(async () => {
+      await hre.network.provider.send('hardhat_reset')
+    })
+
+    afterAll(async () => {
+      account0.dispose()
+      account1.dispose()
+    })
 
     test('should create a wallet and derive 2 accounts using path', async () => {
         wallet = new WalletManagerEvm(SEED_PHRASE, {
@@ -114,44 +109,48 @@ describe('Integration tests', () => {
             value: txAmount
         }
 
-        const EXPECTED_FEE = 57_752_750_000_000
+        const EXPECTED_FEE = 63_003_000_000_000
 
         const { fee } = await account0.quoteSendTransaction(TRANSACTION)
 
-        expect(fee).toBe(EXPECTED_FEE)
         estimatedFee = fee
+
+        expect(fee).toBe(EXPECTED_FEE)
     })
 
-    test('should execute transaction and verify balances', async () => {
+    test('should execute transaction', async () => {
       const TRANSACTION = {
         to: await account1.getAddress(),
         value: txAmount
       }
 
-      // Get initial balances
-      const startBalance0 = await account0.getBalance()
-      const startBalance1 = await account1.getBalance()
+      startBalance0 = await account0.getBalance()
+      startBalance1 = await account1.getBalance()
 
-      // Execute transaction
       const { hash, fee } = await account0.sendTransaction(TRANSACTION)
       const receipt = await hre.ethers.provider.getTransactionReceipt(hash)
+
+      await new Promise(resolve => setTimeout(resolve, 200))
 
       // Verify fee matches estimation
       expect(fee).toBe(estimatedFee)
       expect(receipt.status).toBe(1)
-      
-      await new Promise(resolve => setTimeout(resolve, 200))
+      actualFee = receipt.fee
 
-      // Check final balances
+    })
+
+    test('should decrease sender balance by transaction amount plus fee', async () => {
       const endBalance0 = await account0.getBalance()
-      const endBalance1 = await account1.getBalance()
 
-      const expectedBalance0 = startBalance0 - txAmount - parseInt(receipt.fee)
+      const expectedBalance0 = startBalance0 - txAmount - parseInt(actualFee)
       expect(endBalance0).toEqual(expectedBalance0)
+    })
+
+    test('should increase recipient balance by transaction amount', async () => {
+      const endBalance1 = await account1.getBalance()
 
       expect(endBalance1).toEqual(startBalance1 + txAmount)
     })
-
   })
 
 // b) Creates a wallet, 
@@ -162,8 +161,17 @@ describe('Sending Eth to another account', () => {
 
     let wallet;
     let account0, account1;
-
     let txAmount = 1_000;
+    let startBalance1;
+
+    beforeAll(async () => {
+      await hre.network.provider.send('hardhat_reset')
+    })
+
+    afterAll(async () => {
+      account0.dispose()
+      account1.dispose()
+    })
 
     test('should create a wallet and derive 2 accounts using path', async () => {
         wallet = new WalletManagerEvm(SEED_PHRASE, {
@@ -195,22 +203,23 @@ describe('Sending Eth to another account', () => {
 
    
 
-    test('should execute transaction', async () => {
+    test('should successfully send transaction', async () => {
       const TRANSACTION = {
         to: await account1.getAddress(),
         value: txAmount
       }
 
-      const startBalance1 = await account1.getBalance()
+      startBalance1 = await account1.getBalance()
 
       const { hash } = await account0.sendTransaction(TRANSACTION)
       const receipt = await hre.ethers.provider.getTransactionReceipt(hash)
 
-      expect(receipt.status).toBe(1)
-
-      // Wait for the transaction to be mined
       await new Promise(resolve => setTimeout(resolve, 200))
 
+      expect(receipt.status).toBe(1)
+    })
+
+    test('should increase recipient balance by transaction amount', async () => {
       const endBalance1 = await account1.getBalance()
 
       expect(endBalance1).toEqual(startBalance1 + txAmount)
@@ -227,6 +236,114 @@ describe('Sending Eth to another account', () => {
 // transfers x test tokens to another address, 
 // checks that the fees match, 
 // checks that the balance of the account has decreased by fee and the token balance has decreased by x.
+
+describe('Sending Test Tokens while checking fees', () => {
+
+    let wallet;
+    let account0, account1;
+    let txAmount = 100;
+    let estimatedFee;
+    let testToken;
+    let startBalance0;
+    let startTokenBalance0;
+    let startTokenBalance1;
+    let actualFee;
+
+    beforeAll(async () => {
+      await hre.network.provider.send('hardhat_reset')
+      testToken = await deployTestToken()
+    })
+
+    afterAll(async () => {
+      account0.dispose()
+      account1.dispose()
+    })
+
+    test('should create a wallet and derive 2 accounts using path', async () => {
+        wallet = new WalletManagerEvm(SEED_PHRASE, {
+            provider: hre.network.provider
+        })
+
+        account0 = await wallet.getAccountByPath("0'/0/0")
+
+        account1 = await wallet.getAccountByPath("0'/0/1")
+
+        expect(account0.index).toBe(ACCOUNT0.index)
+
+        expect(account0.path).toBe(ACCOUNT0.path)
+
+        expect(account0.keyPair).toEqual({
+            privateKey: new Uint8Array(Buffer.from(ACCOUNT0.keyPair.privateKey, 'hex')),
+            publicKey: new Uint8Array(Buffer.from(ACCOUNT0.keyPair.publicKey, 'hex'))
+        })
+
+        expect(account1.index).toBe(ACCOUNT1.index)
+
+        expect(account1.path).toBe(ACCOUNT1.path)
+
+        expect(account1.keyPair).toEqual({
+            privateKey: new Uint8Array(Buffer.from(ACCOUNT1.keyPair.privateKey, 'hex')),
+            publicKey: new Uint8Array(Buffer.from(ACCOUNT1.keyPair.publicKey, 'hex'))
+        })
+    })
+
+    test('should quote the cost of sending test tokens to from account0 to account1 and check the fee', async () => {
+        const TRANSACTION = {
+            token: testToken.target,
+            recipient: await account1.getAddress(),
+            amount: txAmount
+        }
+
+        const EXPECTED_FEE = 143_352_000_000_000
+
+        const { fee } = await account0.quoteTransfer(TRANSACTION)
+
+        estimatedFee = fee
+
+        expect(fee).toBe(EXPECTED_FEE)
+    })
+
+    test('should execute transaction', async () => {
+        const TRANSACTION = {
+            token: testToken.target,
+            recipient: await account1.getAddress(),
+            amount: txAmount
+        }
+
+        startBalance0 = await account0.getBalance()
+
+        startTokenBalance0 = await account0.getTokenBalance(testToken.target)
+        startTokenBalance1 = await account1.getTokenBalance(testToken.target)
+
+        const { hash } = await account0.transfer(TRANSACTION)
+        const receipt = await hre.ethers.provider.getTransactionReceipt(hash)
+
+        await new Promise(resolve => setTimeout(resolve, 200))
+
+        actualFee = receipt.fee
+
+        expect(receipt.status).toBe(1)
+    })
+
+    test('should decrease sender balance by fee', async () => {
+        const endBalance0 = await account0.getBalance()
+        const expectedBalance0 = startBalance0 - parseInt(actualFee)
+        expect(endBalance0).toEqual(expectedBalance0)
+    })
+
+    test('should decrease sender token balance by transaction amount', async () => {
+        const endTokenBalance0 = await account0.getTokenBalance(testToken.target)
+
+        const expectedTokenBalance0 = startTokenBalance0 - txAmount
+        expect(endTokenBalance0).toEqual(expectedTokenBalance0)
+    })
+
+    test('should increase recipient token balance by transaction amount', async () => {
+        const endTokenBalance1 = await account1.getTokenBalance(testToken.target)
+
+        expect(endTokenBalance1).toEqual(startTokenBalance1 + txAmount)
+    })
+})
 
 // d) Creates a wallet, 
 // derives account at path "0'/0/0", and "0'/0/1", 
