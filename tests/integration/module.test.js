@@ -129,6 +129,8 @@ describe('Integration tests', () => {
     test('should decrease sender balance by transaction amount plus fee', async () => {
       const endBalance0 = await account0.getBalance()
 
+      console.log(hre.network.provider)
+
       const expectedBalance0 = startBalance0 - txAmount - parseInt(actualFee)
       expect(endBalance0).toEqual(expectedBalance0)
     })
@@ -169,13 +171,15 @@ describe('Integration tests', () => {
       const { hash } = await account0.sendTransaction(TRANSACTION)
       const receipt = await hre.ethers.provider.getTransactionReceipt(hash)
 
-      await new Promise(resolve => setTimeout(resolve, 200))
-
       expect(receipt.status).toBe(1)
     })
 
     test('should increase recipient balance by transaction amount', async () => {
       const endBalance1 = await account1.getBalance()
+
+      const getBalance1V2 = await hre.ethers.provider.getBalance(await account1.getAddress())
+      console.log(getBalance1V2)
+      console.log(await account1.getBalance())
 
       expect(endBalance1).toEqual(startBalance1 + txAmount)
     })
@@ -232,8 +236,6 @@ describe('Integration tests', () => {
 
       const { hash } = await account0.transfer(TRANSACTION)
       const receipt = await hre.ethers.provider.getTransactionReceipt(hash)
-
-      await new Promise(resolve => setTimeout(resolve, 200))
 
       actualFee = receipt.fee
 
@@ -292,8 +294,6 @@ describe('Integration tests', () => {
       const { hash } = await account0.transfer(TRANSACTION)
       const receipt = await hre.ethers.provider.getTransactionReceipt(hash)
 
-      await new Promise(resolve => setTimeout(resolve, 200))
-
       expect(receipt.status).toBe(1)
     })
 
@@ -347,8 +347,6 @@ describe('Integration tests', () => {
 
       const receipt = await hre.ethers.provider.getTransactionReceipt(hash)
 
-      await new Promise(resolve => setTimeout(resolve, 200))
-
       expect(receipt.status).toBe(1)
     })
 
@@ -364,8 +362,6 @@ describe('Integration tests', () => {
       }
       const { hash } = await account0.sendTransaction(TRANSACTION)
       const receipt = await hre.ethers.provider.getTransactionReceipt(hash)
-
-      await new Promise(resolve => setTimeout(resolve, 200))
 
       expect(receipt.status).toBe(1)
       expect(await account1.getBalance()).toBeGreaterThan(0)
@@ -386,8 +382,6 @@ describe('Integration tests', () => {
       const { hash } = await account1.sendTransaction(TRANSACTION_WITH_DATA)
 
       const receipt = await hre.ethers.provider.getTransactionReceipt(hash)
-
-      await new Promise(resolve => setTimeout(resolve, 200))
 
       expect(receipt.status).toBe(1)
     })

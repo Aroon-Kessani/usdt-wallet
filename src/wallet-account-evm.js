@@ -92,7 +92,7 @@ export default class WalletAccountEvm {
     if (provider) {
       provider = typeof provider === 'string'
         ? new JsonRpcProvider(provider)
-        : new BrowserProvider(provider)
+        : new BrowserProvider(provider, undefined, { cacheTimeout: -1 })
 
       this._account = this._account.connect(provider)
     }
@@ -173,7 +173,7 @@ export default class WalletAccountEvm {
     const address = await this.getAddress()
 
     const balance = await this._account.provider.getBalance(address)
-
+    console.log(this._account.provider)
     return Number(balance)
   }
 
