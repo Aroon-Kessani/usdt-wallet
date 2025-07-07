@@ -63,7 +63,7 @@ describe('@wdk/wallet-evm', () => {
     await hre.network.provider.send('hardhat_reset')
   })
 
-  test('should derive an account, quote the cost of a tx, send the tx and return the correct balance', async () => {
+  test('should derive an account, quote the cost of a tx and check the fee', async () => {
     const txAmount = 1_000
 
     wallet = new WalletManagerEvm(SEED_PHRASE, {
@@ -101,28 +101,14 @@ describe('@wdk/wallet-evm', () => {
 
     expect(estimatedFee).toBe(EXPECTED_FEE)
 
-    const startBalance0 = await account0.getBalance()
-    const startBalance1 = await account1.getBalance()
-
     const { hash, fee } = await account0.sendTransaction(TRANSACTION)
     const receipt = await hre.ethers.provider.getTransactionReceipt(hash)
 
     expect(fee).toBe(estimatedFee)
     expect(receipt.status).toBe(1)
-
-    const actualFee = receipt.fee
-
-    const endBalance0 = await account0.getBalance()
-
-    const expectedBalance0 = startBalance0 - txAmount - parseInt(actualFee)
-    expect(endBalance0).toEqual(expectedBalance0)
-
-    const endBalance1 = await account1.getBalance()
-
-    expect(endBalance1).toEqual(startBalance1 + txAmount)
   })
 
-  test('should send a tx from account 0 to 1 and return the correct balance for account 1', async () => {
+  test('should send a tx from account 0 to 1 and check the balances', async () => {
     const txAmount = 1_000
 
     const TRANSACTION = {
@@ -130,6 +116,7 @@ describe('@wdk/wallet-evm', () => {
       value: txAmount
     }
 
+    const startBalance0 = await account0.getBalance()
     const startBalance1 = await account1.getBalance()
 
     const { hash } = await account0.sendTransaction(TRANSACTION)
@@ -137,8 +124,13 @@ describe('@wdk/wallet-evm', () => {
 
     expect(receipt.status).toBe(1)
 
-    const endBalance1 = await account1.getBalance()
+    const actualFee = startBalance0 - await account0.getBalance() - txAmount
+    
+    const endBalance0 = await account0.getBalance()
+    const expectedBalance0 = startBalance0 - txAmount - parseInt(actualFee)
+    expect(endBalance0).toEqual(expectedBalance0)
 
+    const endBalance1 = await account1.getBalance()
     expect(endBalance1).toEqual(startBalance1 + txAmount)
   })
 
@@ -158,34 +150,13 @@ describe('@wdk/wallet-evm', () => {
 
     expect(fee).toBe(EXPECTED_FEE)
 
-    const startBalance0 = await account0.getBalance()
-
-    const startTokenBalance0 = await account0.getTokenBalance(testToken.target)
-    const startTokenBalance1 = await account1.getTokenBalance(testToken.target)
-
     const { hash } = await account0.transfer(TRANSACTION)
     const receipt = await hre.ethers.provider.getTransactionReceipt(hash)
 
-    const actualFee = receipt.fee
-
     expect(receipt.status).toBe(1)
-
-    const endBalance0 = await account0.getBalance()
-    
-    const expectedBalance0 = startBalance0 - parseInt(actualFee)
-    expect(endBalance0).toEqual(expectedBalance0)
-
-    const endTokenBalance0 = await account0.getTokenBalance(testToken.target)
-
-    const expectedTokenBalance0 = startTokenBalance0 - txAmount
-    expect(endTokenBalance0).toEqual(expectedTokenBalance0)
-
-    const endTokenBalance1 = await account1.getTokenBalance(testToken.target)
-
-    expect(endTokenBalance1).toEqual(startTokenBalance1 + txAmount)
   })
 
-  test('should send test tokens from account 0 to 1 and return the correct balance for account 1', async () => {
+  test('should send test tokens from account 0 to 1 and check the balances', async () => {
     const txAmount = 100
     const testToken = await deployTestToken()
 
@@ -195,6 +166,7 @@ describe('@wdk/wallet-evm', () => {
       amount: txAmount
     }
 
+    const startTokenBalance0 = await account0.getTokenBalance(testToken.target)
     const startTokenBalance1 = await account1.getTokenBalance(testToken.target)
 
     const { hash } = await account0.transfer(TRANSACTION)
@@ -202,8 +174,11 @@ describe('@wdk/wallet-evm', () => {
 
     expect(receipt.status).toBe(1)
 
-    const endTokenBalance1 = await account1.getTokenBalance(testToken.target)
+    const endTokenBalance0 = await account0.getTokenBalance(testToken.target)
+    const expectedTokenBalance0 = startTokenBalance0 - txAmount
+    expect(endTokenBalance0).toEqual(expectedTokenBalance0)
 
+    const endTokenBalance1 = await account1.getTokenBalance(testToken.target)
     expect(endTokenBalance1).toEqual(startTokenBalance1 + txAmount)
   })
 
