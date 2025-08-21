@@ -1,3 +1,18 @@
+/** @typedef {import('ethers').Provider} Provider */
+/** @typedef {import("@wdk/wallet").FeeRates} FeeRates */
+/** @typedef {import('./wallet-account-evm.js').EvmWalletConfig} EvmWalletConfig */
+/**
+ * Multiplier for normal fee rate calculations.
+ * Used to adjust the base fee rate for normal priority transactions.
+ * @type {number}
+ */
+export const FEE_RATE_NORMAL_MULTIPLIER: number;
+/**
+ * Multiplier for fast fee rate calculations.
+ * Used to adjust the base fee rate for high priority transactions.
+ * @type {number}
+ */
+export const FEE_RATE_FAST_MULTIPLIER: number;
 export default class WalletManagerEvm extends WalletManager {
     /**
      * Creates a new wallet manager for evm blockchains.

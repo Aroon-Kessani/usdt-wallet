@@ -26,9 +26,19 @@ import WalletAccountEvm from './wallet-account-evm.js'
 
 /** @typedef {import('./wallet-account-evm.js').EvmWalletConfig} EvmWalletConfig */
 
-const FEE_RATE_NORMAL_MULTIPLIER = 1.1
+/**
+ * Multiplier for normal fee rate calculations.
+ * Used to adjust the base fee rate for normal priority transactions.
+ * @type {number}
+ */
+export const FEE_RATE_NORMAL_MULTIPLIER = 1.1
 
-const FEE_RATE_FAST_MULTIPLIER = 2.0
+/**
+ * Multiplier for fast fee rate calculations.
+ * Used to adjust the base fee rate for high priority transactions.
+ * @type {number}
+ */
+export const FEE_RATE_FAST_MULTIPLIER = 2.0
 
 export default class WalletManagerEvm extends WalletManager {
   /**
