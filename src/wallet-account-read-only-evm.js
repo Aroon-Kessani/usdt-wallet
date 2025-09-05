@@ -29,18 +29,18 @@ import { BrowserProvider, Contract, JsonRpcProvider } from 'ethers'
 /**
  * @typedef {Object} EvmTransaction
  * @property {string} to - The transaction's recipient.
- * @property {number} value - The amount of ethers to send to the recipient (in weis).
+ * @property {number | bigint} value - The amount of ethers to send to the recipient (in weis).
  * @property {string} [data] - The transaction's data in hex format.
- * @property {number} [gasLimit] - The maximum amount of gas this transaction is permitted to use.
- * @property {number} [gasPrice] - The price (in wei) per unit of gas this transaction will pay.
- * @property {number} [maxFeePerGas] - The maximum price (in wei) per unit of gas this transaction will pay for the combined [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee and this transaction's priority fee.
- * @property {number} [maxPriorityFeePerGas] - The price (in wei) per unit of gas this transaction will allow in addition to the [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee to bribe miners into giving this transaction priority. This is included in the maxFeePerGas, so this will not affect the total maximum cost set with maxFeePerGas.
+ * @property {number | bigint} [gasLimit] - The maximum amount of gas this transaction is permitted to use.
+ * @property {number | bigint} [gasPrice] - The price (in wei) per unit of gas this transaction will pay.
+ * @property {number | bigint} [maxFeePerGas] - The maximum price (in wei) per unit of gas this transaction will pay for the combined [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee and this transaction's priority fee.
+ * @property {number | bigint} [maxPriorityFeePerGas] - The price (in wei) per unit of gas this transaction will allow in addition to the [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee to bribe miners into giving this transaction priority. This is included in the maxFeePerGas, so this will not affect the total maximum cost set with maxFeePerGas.
  */
 
 /**
  * @typedef {Object} EvmWalletConfig
  * @property {string | Eip1193Provider} [provider] - The url of the rpc provider, or an instance of a class that implements eip-1193.
- * @property {number} [transferMaxFee] - The maximum fee amount for transfer operations.
+ * @property {number | bigint} [transferMaxFee] - The maximum fee amount for transfer operations.
  */
 
 export default class WalletAccountReadOnlyEvm extends WalletAccountReadOnly {
@@ -79,7 +79,7 @@ export default class WalletAccountReadOnlyEvm extends WalletAccountReadOnly {
   /**
    * Returns the account's eth balance.
    *
-   * @returns {Promise<number>} The eth balance (in weis).
+   * @returns {Promise<bigint>} The eth balance (in weis).
    */
   async getBalance () {
     if (!this._provider) {
@@ -90,14 +90,14 @@ export default class WalletAccountReadOnlyEvm extends WalletAccountReadOnly {
 
     const balance = await this._provider.getBalance(address)
 
-    return Number(balance)
+    return balance
   }
 
   /**
    * Returns the account balance for a specific token.
    *
    * @param {string} tokenAddress - The smart contract address of the token.
-   * @returns {Promise<number>} The token balance (in base unit).
+   * @returns {Promise<bigint>} The token balance (in base unit).
    */
   async getTokenBalance (tokenAddress) {
     if (!this._provider) {
@@ -110,7 +110,7 @@ export default class WalletAccountReadOnlyEvm extends WalletAccountReadOnly {
     const contract = new Contract(tokenAddress, abi, this._provider)
     const balance = await contract.balanceOf(address)
 
-    return Number(balance)
+    return balance
   }
 
   /**
@@ -131,7 +131,7 @@ export default class WalletAccountReadOnlyEvm extends WalletAccountReadOnly {
 
     const { maxFeePerGas } = await this._provider.getFeeData()
 
-    return { fee: Number(gas * maxFeePerGas) }
+    return { fee: gas * maxFeePerGas }
   }
 
   /**

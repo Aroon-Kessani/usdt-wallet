@@ -31,16 +31,16 @@ export default class WalletAccountReadOnlyEvm extends WalletAccountReadOnly {
     /**
      * Returns the account's eth balance.
      *
-     * @returns {Promise<number>} The eth balance (in weis).
+     * @returns {Promise<bigint>} The eth balance (in weis).
      */
-    getBalance(): Promise<number>;
+    getBalance(): Promise<bigint>;
     /**
      * Returns the account balance for a specific token.
      *
      * @param {string} tokenAddress - The smart contract address of the token.
-     * @returns {Promise<number>} The token balance (in base unit).
+     * @returns {Promise<bigint>} The token balance (in base unit).
      */
-    getTokenBalance(tokenAddress: string): Promise<number>;
+    getTokenBalance(tokenAddress: string): Promise<bigint>;
     /**
      * Quotes the costs of a send transaction operation.
      *
@@ -77,7 +77,7 @@ export type EvmTransaction = {
     /**
      * - The amount of ethers to send to the recipient (in weis).
      */
-    value: number;
+    value: number | bigint;
     /**
      * - The transaction's data in hex format.
      */
@@ -85,19 +85,19 @@ export type EvmTransaction = {
     /**
      * - The maximum amount of gas this transaction is permitted to use.
      */
-    gasLimit?: number;
+    gasLimit?: number | bigint;
     /**
      * - The price (in wei) per unit of gas this transaction will pay.
      */
-    gasPrice?: number;
+    gasPrice?: number | bigint;
     /**
      * - The maximum price (in wei) per unit of gas this transaction will pay for the combined [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee and this transaction's priority fee.
      */
-    maxFeePerGas?: number;
+    maxFeePerGas?: number | bigint;
     /**
      * - The price (in wei) per unit of gas this transaction will allow in addition to the [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) block's base fee to bribe miners into giving this transaction priority. This is included in the maxFeePerGas, so this will not affect the total maximum cost set with maxFeePerGas.
      */
-    maxPriorityFeePerGas?: number;
+    maxPriorityFeePerGas?: number | bigint;
 };
 export type EvmWalletConfig = {
     /**
@@ -107,6 +107,6 @@ export type EvmWalletConfig = {
     /**
      * - The maximum fee amount for transfer operations.
      */
-    transferMaxFee?: number;
+    transferMaxFee?: number | bigint;
 };
 import { WalletAccountReadOnly } from '@wdk/wallet';

@@ -26,21 +26,23 @@ import WalletAccountEvm from './wallet-account-evm.js'
 
 /** @typedef {import('./wallet-account-evm.js').EvmWalletConfig} EvmWalletConfig */
 
-/**
- * Multiplier for normal fee rate calculations.
- * Used to adjust the base fee rate for normal priority transactions.
- * @type {number}
- */
-export const FEE_RATE_NORMAL_MULTIPLIER = 1.1
-
-/**
- * Multiplier for fast fee rate calculations.
- * Used to adjust the base fee rate for high priority transactions.
- * @type {number}
- */
-export const FEE_RATE_FAST_MULTIPLIER = 2.0
-
 export default class WalletManagerEvm extends WalletManager {
+  /**
+   * Multiplier for normal fee rate calculations (in %).
+   *
+   * @protected
+   * @type {bigint}
+   */
+  static _FEE_RATE_NORMAL_MULTIPLIER = 110n
+
+  /**
+   * Multiplier for fast fee rate calculations (in %).
+   *
+   * @protected
+   * @type {bigint}
+   */
+  static _FEE_RATE_FAST_MULTIPLIER = 200n
+
   /**
    * Creates a new wallet manager for evm blockchains.
    *
@@ -57,14 +59,6 @@ export default class WalletManagerEvm extends WalletManager {
      * @type {EvmWalletConfig}
      */
     this._config = config
-
-    /**
-     * A map between derivation paths and wallet accounts. It contains all the wallet accounts that have been accessed through the {@link getAccount} and {@link getAccountByPath} methods.
-     *
-     * @protected
-     * @type {{ [path: string]: WalletAccountEvm }}
-     */
-    this._accounts = {}
 
     const { provider } = config
 
@@ -123,24 +117,11 @@ export default class WalletManagerEvm extends WalletManager {
       throw new Error('The wallet must be connected to a provider to get fee rates.')
     }
 
-    const feeData = await this._provider.getFeeData()
-
-    const maxFeePerGas = Number(feeData.maxFeePerGas)
+    const { maxFeePerGas } = await this._provider.getFeeData()
 
     return {
-      normal: Math.round(maxFeePerGas * FEE_RATE_NORMAL_MULTIPLIER),
-      fast: maxFeePerGas * FEE_RATE_FAST_MULTIPLIER
+      normal: maxFeePerGas * WalletManagerEvm._FEE_RATE_NORMAL_MULTIPLIER / 100n,
+      fast: maxFeePerGas * WalletManagerEvm._FEE_RATE_FAST_MULTIPLIER / 100n
     }
-  }
-
-  /**
-   * Disposes all the wallet accounts, erasing their private keys from the memory.
-   */
-  dispose () {
-    for (const account of Object.values(this._accounts)) {
-      account.dispose()
-    }
-
-    this._accounts = {}
   }
 }

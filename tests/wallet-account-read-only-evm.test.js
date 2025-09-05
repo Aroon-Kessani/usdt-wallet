@@ -10,8 +10,8 @@ import TestToken from './artifacts/TestToken.json' with { type: 'json' }
 
 const ADDRESS = '0x405005C7c4422390F4B334F64Cf20E0b767131d0'
 
-const INITIAL_BALANCE = 1_000_000_000_000_000_000
-const INITIAL_TOKEN_BALANCE = 1_000_000
+const INITIAL_BALANCE = 1_000_000_000_000_000_000n
+const INITIAL_TOKEN_BALANCE = 1_000_000n
 
 async function deployTestToken () {
   const [signer] = await hre.ethers.getSigners()
@@ -43,9 +43,9 @@ describe('WalletAccountReadOnlyEvm', () => {
   beforeEach(async () => {
     testToken = await deployTestToken()
 
-    await sendEthersTo(ADDRESS, BigInt(INITIAL_BALANCE))
+    await sendEthersTo(ADDRESS, INITIAL_BALANCE)
 
-    await sendTestTokensTo(ADDRESS, BigInt(INITIAL_TOKEN_BALANCE))
+    await sendTestTokensTo(ADDRESS, INITIAL_TOKEN_BALANCE)
 
     account = new WalletAccountReadOnlyEvm(ADDRESS, {
       provider: hre.network.provider
@@ -93,7 +93,7 @@ describe('WalletAccountReadOnlyEvm', () => {
         value: 1_000
       }
 
-      const EXPECTED_FEE = 49_611_983_472_910
+      const EXPECTED_FEE = 49_611_983_472_910n
 
       const { fee } = await account.quoteSendTransaction(TRANSACTION)
 
@@ -107,7 +107,7 @@ describe('WalletAccountReadOnlyEvm', () => {
         data: testToken.interface.encodeFunctionData('balanceOf', ['0x636e9c21f27d9401ac180666bf8DC0D3FcEb0D24'])
       }
 
-      const EXPECTED_FEE = 57_395_969_261_360
+      const EXPECTED_FEE = 57_395_969_261_360n
 
       const { fee } = await account.quoteSendTransaction(TRANSACTION_WITH_DATA)
 
@@ -130,7 +130,7 @@ describe('WalletAccountReadOnlyEvm', () => {
         amount: 100
       }
 
-      const EXPECTED_FEE = 123_145_253_772_480
+      const EXPECTED_FEE = 123_145_253_772_480n
 
       const { fee } = await account.quoteTransfer(TRANSFER)
 

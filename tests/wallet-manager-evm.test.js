@@ -61,9 +61,9 @@ describe('WalletManagerEvm', () => {
     test('should return the correct fee rates', async () => {
       const feeRates = await wallet.getFeeRates()
 
-      expect(feeRates.normal).toBe(3_300_000_000)
+      expect(feeRates.normal).toBe(3_300_000_000n)
 
-      expect(feeRates.fast).toBe(6_000_000_000)
+      expect(feeRates.fast).toBe(6_000_000_000n)
     })
 
     test('should throw if the wallet is not connected to a provider', async () => {
