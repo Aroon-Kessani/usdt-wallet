@@ -1,6 +1,7 @@
 # @wdk/wallet-evm
 
-<!-- Here we will put some badges like the build status, the latest version of the package, ...; we will add these later on, so don't worry about them at the moment. -->
+
+**Note**: This package is currently in beta. Please test thoroughly in development environments before using in production.
 
 A simple and secure package to manage BIP-44 wallets for EVM-compatible blockchains. This package provides a clean API for creating, managing, and interacting with Ethereum-compatible wallets using BIP-39 seed phrases and EVM-specific derivation paths.
 
@@ -15,53 +16,22 @@ For detailed documentation about the complete WDK ecosystem, visit [docs.wallet.
 - **BIP-39 Seed Phrase Support**: Generate and validate BIP-39 mnemonic seed phrases
 - **EVM Derivation Paths**: Support for BIP-44 standard derivation paths for Ethereum (m/44'/60')
 - **Multi-Account Management**: Create and manage multiple accounts from a single seed phrase
-- **EVM Address Support**: Generate and manage Ethereum-compatible addresses using ethers.js
-- **Message Signing**: Sign and verify messages using EVM cryptography
 - **Transaction Management**: Send transactions and get fee estimates with EIP-1559 support
 - **ERC20 Support**: Query native token and ERC20 token balances using smart contract interactions
-- **TypeScript Support**: Full TypeScript definitions included
-- **Memory Safety**: Secure private key management with memory-safe HDNodeWallet implementation
-- **Provider Flexibility**: Support for both JSON-RPC URLs and EIP-1193 browser providers
-- **Gas Optimization**: Support for EIP-1559 maxFeePerGas and maxPriorityFeePerGas
-- **Fee Estimation**: Dynamic fee calculation with normal (1.1x) and fast (2.0x) multipliers
 
 ## ⬇️ Installation
 
 To install the `@wdk/wallet-evm` package, follow these instructions:
 
-### Public Release
-
-Once the package is publicly available, you can install it using npm:
+You can install it using npm:
 
 ```bash
 npm install @wdk/wallet-evm
 ```
 
-### Private Access
-
-If you have access to the private repository, install the package from the develop branch on GitHub:
-
-```bash
-npm install git+https://github.com/tetherto/wdk-wallet-evm.git#develop
-```
-
-After installation, ensure your package.json includes the dependency correctly:
-
-```json
-"dependencies": {
-  // ... other dependencies ...
-  "@wdk/wallet-evm": "git+ssh://git@github.com:tetherto/wdk-wallet-evm.git#develop"
-  // ... other dependencies ...
-}
-```
-
 ## 🚀 Quick Start
 
 ### Importing from `@wdk/wallet-evm`
-
-1. WalletManagerEvm: Main class for managing wallets
-2. WalletAccountEvm: Use this for full access accounts
-3. WalletAccountReadOnlyEvm: Use this for read-only accounts
 
 ### Creating a New Wallet
 
@@ -69,7 +39,7 @@ After installation, ensure your package.json includes the dependency correctly:
 import WalletManagerEvm, { WalletAccountEvm, WalletAccountReadOnlyEvm } from '@wdk/wallet-evm'
 
 // Use a BIP-39 seed phrase (replace with your own secure phrase)
-const seedPhrase = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+const seedPhrase = 'test only example nut use this real life secret phrase must random'
 
 // Create wallet manager with provider config
 const wallet = new WalletManagerEvm(seedPhrase, {
@@ -208,8 +178,6 @@ const transferResult = await account.transfer({
   token: '0x...',      // ERC20 contract address
   recipient: '0x...',  // Recipient's address
   amount: 1000000n     // Amount in token's base units (use BigInt for large numbers)
-}, {
-  transferMaxFee: 1000000000000n // Optional: Maximum allowed fee in wei
 });
 console.log('Transfer hash:', transferResult.hash);
 console.log('Transfer fee:', transferResult.fee, 'wei');
@@ -288,7 +256,7 @@ new WalletManagerEvm(seed, config)
 - `seed` (string | Uint8Array): BIP-39 mnemonic seed phrase or seed bytes
 - `config` (object, optional): Configuration object
   - `provider` (string | Eip1193Provider): RPC endpoint URL or EIP-1193 provider instance
-  - `transferMaxFee` (number, optional): Maximum fee amount for transfer operations (in wei)
+  - `transferMaxFee` (number | bigint, optional): Maximum fee amount for transfer operations (in wei)
 
 **Example:**
 ```javascript
@@ -304,7 +272,7 @@ const wallet = new WalletManagerEvm(seedPhrase, {
 |--------|-------------|---------|
 | `getAccount(index)` | Returns a wallet account at the specified index | `Promise<WalletAccountEvm>` |
 | `getAccountByPath(path)` | Returns a wallet account at the specified BIP-44 derivation path | `Promise<WalletAccountEvm>` |
-| `getFeeRates()` | Returns current fee rates for transactions | `Promise<{normal: number, fast: number}>` |
+| `getFeeRates()` | Returns current fee rates for transactions | `Promise<{normal: bigint, fast: bigint}>` |
 | `dispose()` | Disposes all wallet accounts, clearing private keys from memory | `void` |
 
 ### WalletAccountEvm
@@ -322,7 +290,7 @@ new WalletAccountEvm(seed, path, config)
 - `path` (string): BIP-44 derivation path (e.g., "0'/0/0")
 - `config` (object, optional): Configuration object
   - `provider` (string | Eip1193Provider): RPC endpoint URL or EIP-1193 provider instance
-  - `transferMaxFee` (number, optional): Maximum fee amount for transfer operations (in wei)
+  - `transferMaxFee` (number | bigint, optional): Maximum fee amount for transfer operations (in wei)
 
 #### Methods
 
@@ -331,12 +299,12 @@ new WalletAccountEvm(seed, path, config)
 | `getAddress()` | Returns the account's address | `Promise<string>` |
 | `sign(message)` | Signs a message using the account's private key | `Promise<string>` |
 | `verify(message, signature)` | Verifies a message signature | `Promise<boolean>` |
-| `sendTransaction(tx)` | Sends an EVM transaction | `Promise<{hash: string, fee: number}>` |
-| `quoteSendTransaction(tx)` | Estimates the fee for an EVM transaction | `Promise<{fee: number}>` |
-| `transfer(options)` | Transfers ERC20 tokens to another address | `Promise<{hash: string, fee: number}>` |
-| `quoteTransfer(options)` | Estimates the fee for an ERC20 transfer | `Promise<{fee: number}>` |
-| `getBalance()` | Returns the native token balance (in wei) | `Promise<number>` |
-| `getTokenBalance(tokenAddress)` | Returns the balance of a specific ERC20 token | `Promise<number>` |
+| `sendTransaction(tx)` | Sends an EVM transaction | `Promise<{hash: string, fee: bigint}>` |
+| `quoteSendTransaction(tx)` | Estimates the fee for an EVM transaction | `Promise<{fee: bigint}>` |
+| `transfer(options)` | Transfers ERC20 tokens to another address | `Promise<{hash: string, fee: bigint}>` |
+| `quoteTransfer(options)` | Estimates the fee for an ERC20 transfer | `Promise<{fee: bigint}>` |
+| `getBalance()` | Returns the native token balance (in wei) | `Promise<bigint>` |
+| `getTokenBalance(tokenAddress)` | Returns the balance of a specific ERC20 token | `Promise<bigint>` |
 | `dispose()` | Disposes the wallet account, clearing private keys from memory | `void` |
 
 ##### `sendTransaction(tx)`
@@ -345,14 +313,14 @@ Sends an EVM transaction.
 **Parameters:**
 - `tx` (object): The transaction object
   - `to` (string): Recipient address
-  - `value` (number): Amount in wei
+  - `value` (number | bigint): Amount in wei
   - `data` (string, optional): Transaction data in hex format
-  - `gasLimit` (number, optional): Maximum gas units
-  - `gasPrice` (number, optional): Legacy gas price in wei
-  - `maxFeePerGas` (number, optional): EIP-1559 max fee per gas in wei
-  - `maxPriorityFeePerGas` (number, optional): EIP-1559 max priority fee per gas in wei
+  - `gasLimit` (number | bigint, optional): Maximum gas units
+  - `gasPrice` (number | bigint, optional): Legacy gas price in wei
+  - `maxFeePerGas` (number | bigint, optional): EIP-1559 max fee per gas in wei
+  - `maxPriorityFeePerGas` (number | bigint, optional): EIP-1559 max priority fee per gas in wei
 
-**Returns:** `Promise<{hash: string, fee: number}>` - Object containing hash and fee (in wei)
+**Returns:** `Promise<{hash: string, fee: bigint}>` - Object containing hash and fee (in wei)
 
 #### Properties
 
@@ -383,10 +351,10 @@ new WalletAccountReadOnlyEvm(address, config)
 
 | Method | Description | Returns |
 |--------|-------------|---------|
-| `getBalance()` | Returns the native token balance (in wei) | `Promise<number>` |
-| `getTokenBalance(tokenAddress)` | Returns the balance of a specific ERC20 token | `Promise<number>` |
-| `quoteSendTransaction(tx)` | Estimates the fee for an EVM transaction | `Promise<{fee: number}>` |
-| `quoteTransfer(options)` | Estimates the fee for an ERC20 transfer | `Promise<{fee: number}>` |
+| `getBalance()` | Returns the native token balance (in wei) | `Promise<bigint>` |
+| `getTokenBalance(tokenAddress)` | Returns the balance of a specific ERC20 token | `Promise<bigint>` |
+| `quoteSendTransaction(tx)` | Estimates the fee for an EVM transaction | `Promise<{fee: bigint}>` |
+| `quoteTransfer(options)` | Estimates the fee for an ERC20 transfer | `Promise<{fee: bigint}>` |
 
 ## 🌐 Supported Networks
 
@@ -450,5 +418,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 For support, please open an issue on the GitHub repository.
 
 ---
-
-**Note**: This package is currently in beta. Please test thoroughly in development environments before using in production.
