@@ -1,19 +1,18 @@
-/** @typedef {import('ethers').Provider} Provider */
-/** @typedef {import("@wdk/wallet").FeeRates} FeeRates */
-/** @typedef {import('./wallet-account-evm.js').EvmWalletConfig} EvmWalletConfig */
-/**
- * Multiplier for normal fee rate calculations.
- * Used to adjust the base fee rate for normal priority transactions.
- * @type {number}
- */
-export const FEE_RATE_NORMAL_MULTIPLIER: number;
-/**
- * Multiplier for fast fee rate calculations.
- * Used to adjust the base fee rate for high priority transactions.
- * @type {number}
- */
-export const FEE_RATE_FAST_MULTIPLIER: number;
 export default class WalletManagerEvm extends WalletManager {
+    /**
+     * Multiplier for normal fee rate calculations (in %).
+     *
+     * @protected
+     * @type {bigint}
+     */
+    protected static _FEE_RATE_NORMAL_MULTIPLIER: bigint;
+    /**
+     * Multiplier for fast fee rate calculations (in %).
+     *
+     * @protected
+     * @type {bigint}
+     */
+    protected static _FEE_RATE_FAST_MULTIPLIER: bigint;
     /**
      * Creates a new wallet manager for evm blockchains.
      *
@@ -28,15 +27,6 @@ export default class WalletManagerEvm extends WalletManager {
      * @type {EvmWalletConfig}
      */
     protected _config: EvmWalletConfig;
-    /**
-     * A map between derivation paths and wallet accounts. It contains all the wallet accounts that have been accessed through the {@link getAccount} and {@link getAccountByPath} methods.
-     *
-     * @protected
-     * @type {{ [path: string]: WalletAccountEvm }}
-     */
-    protected _accounts: {
-        [path: string]: WalletAccountEvm;
-    };
     /**
      * An ethers provider to interact with a node of the blockchain.
      *
@@ -70,10 +60,6 @@ export default class WalletManagerEvm extends WalletManager {
      * @returns {Promise<FeeRates>} The fee rates (in weis).
      */
     getFeeRates(): Promise<FeeRates>;
-    /**
-     * Disposes all the wallet accounts, erasing their private keys from the memory.
-     */
-    dispose(): void;
 }
 export type Provider = import("ethers").Provider;
 export type FeeRates = import("@wdk/wallet").FeeRates;

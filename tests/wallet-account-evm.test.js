@@ -26,8 +26,8 @@ const ACCOUNT = {
   }
 }
 
-const INITIAL_BALANCE = 1_000_000_000_000_000_000
-const INITIAL_TOKEN_BALANCE = 1_000_000
+const INITIAL_BALANCE = 1_000_000_000_000_000_000n
+const INITIAL_TOKEN_BALANCE = 1_000_000n
 
 async function deployTestToken () {
   const [signer] = await hre.ethers.getSigners()
@@ -59,9 +59,9 @@ describe('WalletAccountEvm', () => {
   beforeEach(async () => {
     testToken = await deployTestToken()
 
-    await sendEthersTo(ACCOUNT.address, BigInt(INITIAL_BALANCE))
+    await sendEthersTo(ACCOUNT.address, INITIAL_BALANCE)
 
-    await sendTestTokensTo(ACCOUNT.address, BigInt(INITIAL_TOKEN_BALANCE))
+    await sendTestTokensTo(ACCOUNT.address, INITIAL_TOKEN_BALANCE)
 
     account = new WalletAccountEvm(SEED_PHRASE, "0'/0/0", {
       provider: hre.network.provider
@@ -156,7 +156,7 @@ describe('WalletAccountEvm', () => {
         value: 1_000
       }
 
-      const EXPECTED_FEE = 49_611_983_472_910
+      const EXPECTED_FEE = 49_611_983_472_910n
 
       const { hash, fee } = await account.sendTransaction(TRANSACTION)
 
@@ -176,7 +176,7 @@ describe('WalletAccountEvm', () => {
         data: testToken.interface.encodeFunctionData('balanceOf', ['0x636e9c21f27d9401ac180666bf8DC0D3FcEb0D24'])
       }
 
-      const EXPECTED_FEE = 57_395_969_261_360
+      const EXPECTED_FEE = 57_395_969_261_360n
 
       const { hash, fee } = await account.sendTransaction(TRANSACTION_WITH_DATA)
 
@@ -185,6 +185,7 @@ describe('WalletAccountEvm', () => {
       expect(transaction.hash).toBe(hash)
       expect(transaction.to).toBe(TRANSACTION_WITH_DATA.to)
       expect(transaction.value).toBe(BigInt(TRANSACTION_WITH_DATA.value))
+
       expect(transaction.data).toBe(TRANSACTION_WITH_DATA.data)
 
       expect(fee).toBe(EXPECTED_FEE)
@@ -206,7 +207,7 @@ describe('WalletAccountEvm', () => {
         amount: 100
       }
 
-      const EXPECTED_FEE = 123_145_253_772_480
+      const EXPECTED_FEE = 123_145_253_772_480n
 
       const { hash, fee } = await account.transfer(TRANSFER)
       const transaction = await hre.ethers.provider.getTransaction(hash)
@@ -214,7 +215,7 @@ describe('WalletAccountEvm', () => {
 
       expect(transaction.hash).toBe(hash)
       expect(transaction.to).toBe(TRANSFER.token)
-      expect(transaction.value).toBe(BigInt(0))
+      expect(transaction.value).toBe(0n)
 
       expect(transaction.data).toBe(data)
 

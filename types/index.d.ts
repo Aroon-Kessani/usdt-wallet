@@ -1,3 +1,4 @@
+export { default } from "./src/wallet-manager-evm.js";
 export { default as WalletAccountReadOnlyEvm } from "./src/wallet-account-read-only-evm.js";
 export { default as WalletAccountEvm } from "./src/wallet-account-evm.js";
 export type EvmTransactionReceipt = import("ethers").TransactionReceipt;
@@ -8,4 +9,3 @@ export type TransferOptions = import("@wdk/wallet").TransferOptions;
 export type TransferResult = import("@wdk/wallet").TransferResult;
 export type EvmTransaction = import("./src/wallet-account-read-only-evm.js").EvmTransaction;
 export type EvmWalletConfig = import("./src/wallet-account-read-only-evm.js").EvmWalletConfig;
-export { default, FEE_RATE_NORMAL_MULTIPLIER, FEE_RATE_FAST_MULTIPLIER } from "./src/wallet-manager-evm.js";
