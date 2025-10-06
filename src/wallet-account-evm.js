@@ -190,7 +190,7 @@ export default class WalletAccountEvm extends WalletAccountReadOnlyEvm {
 
   /**
    * Approves a specific amount of tokens to a spender.
-   * 
+   *
    * @param {ApproveOptions} options The approve options.
    * @returns {Promise<TransactionResult>} The transaction’s result.
    * @throws {Error} If trying to approve usdts on ethereum with allowance not equal to zero (due to the usdt allowance reset requirement).
