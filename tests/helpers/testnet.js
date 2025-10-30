@@ -5,11 +5,20 @@ import WalletManagerEvm from '../../index.js'
 // Load environment variables from .env when present
 dotenv.config()
 
+// Fail fast: require important testnet configuration to be provided via environment variables.
+// This prevents accidentally running real testnet tests without proper config.
+if (!process.env.TESTNET_RPC_URL || !process.env.TESTNET_SEED_PHRASE) {
+  throw new Error(
+    'Missing required testnet environment variables. Please copy .env.example to .env and set TESTNET_RPC_URL and TESTNET_SEED_PHRASE.'
+  )
+}
+
 // Named exports for important test configuration values (read from env with sensible defaults)
-export const TESTNET_RPC_URL = process.env.TESTNET_RPC_URL || 'https://eth-sepolia.g.alchemy.com/v2/jlxrE4wpG-lcjCGyyPKa9rfVFgsbDor_'
-export const TESTNET_SEED_PHRASE = process.env.TESTNET_SEED_PHRASE || 'cook voyage document eight skate token alien guide drink uncle term abuse'
-export const TEST_TOKEN_ADDRESS = process.env.TEST_TOKEN_ADDRESS || '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9'
-export const RECEIVER = process.env.RECEIVER || '0x405005C7c4422390F4B334F64Cf20E0b767131d0'
+export const TESTNET_RPC_URL = process.env.TESTNET_RPC_URL || ''
+// Sensitive values should be provided via .env (see .env.example). Do NOT hard-code secrets here.
+export const TESTNET_SEED_PHRASE = process.env.TESTNET_SEED_PHRASE || ''
+export const TEST_TOKEN_ADDRESS = process.env.TEST_TOKEN_ADDRESS || ''
+export const RECEIVER = process.env.RECEIVER || ''
 
 // Read configuration from environment with sensible defaults
 export const CONFIG = {
