@@ -1,3 +1,24 @@
+/**
+ * @file testnet-integration.test.js
+ *
+ * 🔍 Integration Test Suite (Sepolia Fork)
+ * -------------------------------------------------------
+ * This suite performs full-stack EVM integration tests using
+ * a locally forked Sepolia network (Hardhat or Foundry fork).
+ *
+ * It verifies end-to-end WalletManagerEvm functionality:
+ *  - ETH transfers
+ *  - WETH wrapping/unwrapping
+ *  - Token transfers, approvals, and reverts
+ *  - Fee handling and transaction safety checks
+ *
+ * 💡 Notes:
+ *  - The provider and wallet are configured using testnet helpers.
+ *  - All timing-sensitive tests include small delays to account for
+ *    state propagation in local or forked RPC environments.
+ *  - Each test uses deterministic BigInt values to avoid precision loss.
+ */
+
 import { describe, expect, test, beforeAll, afterAll } from '@jest/globals'
 import WalletManagerEvm from '../../index.js'
 import {
@@ -5,191 +26,164 @@ import {
     getProvider,
     makeWallet,
     createWethContract,
-    waitForConfirmation,
     TESTNET_SEED_PHRASE,
     TESTNET_RPC_URL,
     TEST_TOKEN_ADDRESS,
 } from '../helpers/testnet.js'
 
+// --------------------------------------------------------
+// Root Suite — Integration Testing on Sepolia Fork
+// --------------------------------------------------------
 describe('Integration Tests on Sepolia', () => {
     let wallet
     let provider
     let wethContract
     const cfg = CONFIG
 
+    // --------------------------------------------------------
+    // Global Setup (runs once before all tests)
+    // --------------------------------------------------------
     beforeAll(async () => {
         provider = getProvider()
 
-        // Initialize wallet & WETH contract via helpers
+        // Initialize wallet and attach provider
         wallet = makeWallet()
         wethContract = createWethContract(provider)
 
-        // Verify WETH contract
+        // Verify WETH contract connectivity
         const name = await wethContract.name()
         const symbol = await wethContract.symbol()
         console.log(`Connected to ${name} (${symbol}) at ${cfg.TEST_TOKEN_ADDRESS}`)
     }, CONFIG.timeout)
 
+    // --------------------------------------------------------
+    // Nested Suite — Core Wallet Operations
+    // --------------------------------------------------------
     describe('Test Operations', () => {
         let account0
         let account1
 
+        // --------------------------------------------------------
+        // Setup test accounts before running test cases
+        // --------------------------------------------------------
         beforeAll(async () => {
             account0 = await wallet.getAccount(0)
             account1 = await wallet.getAccount(1)
-            // Ensure accounts have a provider attached (the Wallet implementation may not always set it)
-            if (!account0._provider) {
-                const prov = getProvider()
-                account0._provider = prov
-                if (account0._account && typeof account0._account.connect === 'function') account0._account = account0._account.connect(prov)
-            }
-            if (!account1._provider) {
-                const prov = getProvider()
-                account1._provider = prov
-                if (account1._account && typeof account1._account.connect === 'function') account1._account = account1._account.connect(prov)
+
+            // Ensure provider binding for accounts (handles edge cases where
+            // the WalletManagerEvm instance doesn't auto-connect accounts)
+            for (const acct of [account0, account1]) {
+                if (!acct._provider) {
+                    const prov = getProvider()
+                    acct._provider = prov
+                    if (acct._account && typeof acct._account.connect === 'function') {
+                        acct._account = acct._account.connect(prov)
+                    }
+                }
             }
 
             console.log('Testing with accounts:', await account0.getAddress(), await account1.getAddress())
         })
 
+        // --------------------------------------------------------
+        // ✅ ETH Transfer Test
+        // --------------------------------------------------------
         test('should send ETH to configured receiver', async () => {
             const account = await wallet.getAccount(0)
             const receiver = cfg.RECEIVER
 
-            const beforeSender = await account.getBalance()
-            const beforeReceiverBn = await provider.getBalance(receiver)
-            const beforeReceiver = BigInt(beforeReceiverBn.toString())
+            const beforeReceiver = await provider.getBalance(receiver)
+            const amount = 1_000_000_000_000_000n // 0.001 ETH
 
-            const amount = 10_000n
             const tx = { to: receiver, value: amount }
+            await account.sendTransaction(tx)
 
-            const result = await account.sendTransaction(tx)
-            await waitForConfirmation(provider, result.hash)
+            // Wait briefly to ensure provider state updates (important for forked networks)
+            await new Promise(res => setTimeout(res, 2000))
 
-            const afterSender = await account.getBalance()
-            const afterReceiverBn = await provider.getBalance(receiver)
-            const afterReceiver = BigInt(afterReceiverBn.toString())
-
-            // Ensure the transaction on-chain matches the intended transfer and it mined successfully
-            const onchainTx = await provider.getTransaction(result.hash)
-            const receipt = await waitForConfirmation(provider, result.hash)
-            expect(receipt.status).toBe(1)
-            expect(onchainTx.to.toLowerCase()).toBe(receiver.toLowerCase())
-            expect(BigInt(onchainTx.value.toString())).toBe(amount)
+            const afterReceiver = await provider.getBalance(receiver)
+            expect(afterReceiver).toBe(beforeReceiver + amount)
         }, CONFIG.timeout)
 
+        // --------------------------------------------------------
+        // ✅ WETH Deposit (Wrap ETH)
+        // --------------------------------------------------------
         test('should wrap ETH to WETH', async () => {
             const wrapAmount = 1_000_000_000_000_000n // 0.001 ETH
 
-            // Get initial balances
             const initialEthBalance = await account0.getBalance()
             const initialWethBalance = await account0.getTokenBalance(TEST_TOKEN_ADDRESS)
 
-            console.log('Initial Balances:', {
-                ETH: initialEthBalance,
-                WETH: initialWethBalance
-            })
-
-            // Wrap ETH to WETH using deposit()
+            // Construct deposit() calldata for WETH
             const depositTx = {
                 to: TEST_TOKEN_ADDRESS,
                 value: wrapAmount,
                 data: wethContract.interface.encodeFunctionData('deposit', [])
             }
 
-            const result = await account0.sendTransaction(depositTx)
-            console.log('Deposit transaction hash:', result.hash)
+            await account0.sendTransaction(depositTx)
+            await new Promise(res => setTimeout(res, 2000))
 
-            const receipt = await waitForConfirmation(provider, result.hash)
-            expect(receipt.status).toBe(1)
-
-            // Verify balances
             const finalWethBalance = await account0.getTokenBalance(TEST_TOKEN_ADDRESS)
             expect(finalWethBalance).toBe(initialWethBalance + wrapAmount)
-
-            console.log('Final WETH Balance:', finalWethBalance)
         }, CONFIG.timeout)
 
+        // --------------------------------------------------------
+        // ✅ WETH Transfer Between Accounts
+        // --------------------------------------------------------
         test('should transfer WETH between accounts', async () => {
             const transferAmount = 500_000_000_000_000n // 0.0005 ETH worth of WETH
 
-            // Get initial balances
             const initialBalance0 = await account0.getTokenBalance(TEST_TOKEN_ADDRESS)
             const initialBalance1 = await account1.getTokenBalance(TEST_TOKEN_ADDRESS)
 
-            console.log('Initial WETH Balances:', {
-                account0: initialBalance0,
-                account1: initialBalance1
-            })
-
-            // Transfer WETH
             const transfer = {
                 token: TEST_TOKEN_ADDRESS,
                 recipient: await account1.getAddress(),
                 amount: transferAmount
             }
 
-            const result = await account0.transfer(transfer)
-            console.log('Transfer transaction hash:', result.hash)
+            await account0.transfer(transfer)
 
-            const receipt = await waitForConfirmation(provider, result.hash)
-            expect(receipt.status).toBe(1)
-
-            // Verify balances
             const finalBalance0 = await account0.getTokenBalance(TEST_TOKEN_ADDRESS)
             const finalBalance1 = await account1.getTokenBalance(TEST_TOKEN_ADDRESS)
 
             expect(finalBalance0).toBe(initialBalance0 - transferAmount)
             expect(finalBalance1).toBe(initialBalance1 + transferAmount)
-
-            console.log('Final WETH Balances:', {
-                account0: finalBalance0,
-                account1: finalBalance1
-            })
         }, CONFIG.timeout)
 
+        // --------------------------------------------------------
+        // ✅ Unwrap (Withdraw) WETH to ETH
+        // --------------------------------------------------------
         test('should unwrap WETH to ETH', async () => {
             const unwrapAmount = 100_000_000_000_000n // 0.0001 ETH
 
-            // Get initial balances
             const initialEthBalance = await account0.getBalance()
             const initialWethBalance = await account0.getTokenBalance(TEST_TOKEN_ADDRESS)
 
-            console.log('Initial Balances:', {
-                ETH: initialEthBalance,
-                WETH: initialWethBalance
-            })
-
-            // Unwrap WETH using withdraw()
+            // Withdraw WETH back to ETH
             const withdrawTx = {
                 to: TEST_TOKEN_ADDRESS,
                 data: wethContract.interface.encodeFunctionData('withdraw', [unwrapAmount])
             }
 
             const result = await account0.sendTransaction(withdrawTx)
-            console.log('Withdraw transaction hash:', result.hash)
+            await new Promise(res => setTimeout(res, 2000))
 
-            const receipt = await waitForConfirmation(provider, result.hash)
-            expect(receipt.status).toBe(1)
-
-            // Verify balances
             const finalEthBalance = await account0.getBalance()
             const finalWethBalance = await account0.getTokenBalance(TEST_TOKEN_ADDRESS)
 
             expect(finalWethBalance).toBe(initialWethBalance - unwrapAmount)
             expect(finalEthBalance).toBeGreaterThan(initialEthBalance - result.fee)
-
-            console.log('Final Balances:', {
-                ETH: finalEthBalance,
-                WETH: finalWethBalance,
-                gasUsed: result.fee
-            })
         }, CONFIG.timeout)
 
+        // --------------------------------------------------------
+        // ✅ Approve + transferFrom Flow
+        // --------------------------------------------------------
         test('should handle WETH approval and transferFrom', async () => {
             const approveAmount = 1_000_000_000_000_000n // 0.001 ETH worth of WETH
 
-            // Approve account1 to spend account0's WETH
+            // Approve spender (account1)
             const approveTx = {
                 to: TEST_TOKEN_ADDRESS,
                 data: wethContract.interface.encodeFunctionData('approve', [
@@ -198,29 +192,25 @@ describe('Integration Tests on Sepolia', () => {
                 ])
             }
 
-            console.log('Approving WETH transfer...')
-            const approveResult = await account0.sendTransaction(approveTx)
-            await waitForConfirmation(provider, approveResult.hash)
+            await account0.sendTransaction(approveTx)
+            await new Promise(res => setTimeout(res, 2000))
 
-            // Check allowance
+            // Verify allowance
             const allowance = await wethContract.allowance(
                 await account0.getAddress(),
                 await account1.getAddress()
             )
             expect(allowance).toBe(approveAmount)
 
-            // Get initial balances
+            // Setup transferFrom
+            const desiredAmount = 500_000_000_000_000n
             const initialBalance0 = await account0.getTokenBalance(TEST_TOKEN_ADDRESS)
             const initialBalance1 = await account1.getTokenBalance(TEST_TOKEN_ADDRESS)
-
-            // Determine actual transfer amount (must not exceed balance or allowance)
-            const desiredAmount = 500_000_000_000_000n // 0.0005 ETH worth of WETH
             const maxAllowed = allowance < initialBalance0 ? allowance : initialBalance0
             const transferAmount = desiredAmount <= maxAllowed ? desiredAmount : maxAllowed
 
-            if (transferAmount === 0n) {
-                throw new Error('No transferable WETH available for transferFrom test (balance or allowance is zero).')
-            }
+            if (transferAmount === 0n)
+                throw new Error('No transferable WETH available for transferFrom test.')
 
             const transferFromTx = {
                 to: TEST_TOKEN_ADDRESS,
@@ -231,63 +221,40 @@ describe('Integration Tests on Sepolia', () => {
                 ])
             }
 
-            // Gas estimation and fee quoting (optimization)
-            const fromAddress = await account1.getAddress()
-            const gasEstimate = await provider.estimateGas({ from: fromAddress, ...transferFromTx })
-            console.log('Gas estimate for transferFrom:', gasEstimate.toString())
-
+            // Ensure account1 has ETH to pay gas
+            const gasEstimate = await provider.estimateGas({ from: await account1.getAddress(), ...transferFromTx })
             const feeEstimate = await account1.quoteSendTransaction(transferFromTx)
-            console.log('Fee estimate for transferFrom (wei):', feeEstimate.fee)
+            const balance1 = await account1.getBalance()
 
-            // Ensure account1 has ETH to pay for gas; top up from account0 if needed
-            const account1BalanceBefore = await account1.getBalance()
-            if (account1BalanceBefore < feeEstimate.fee * 2n) {
-                const topUpAmount = feeEstimate.fee * 3n // small safety margin
-                console.log('Topping up account1 with', topUpAmount, 'wei for gas')
-                const topUpTx = { to: await account1.getAddress(), value: topUpAmount }
-                const topUpResult = await account0.sendTransaction(topUpTx)
-                // Wait for the top-up to be mined but use a shorter timeout and single confirmation to avoid long test delays
-                try {
-                    await provider.waitForTransaction(topUpResult.hash, 1, 60000) // 60s
-                } catch (err) {
-                    // If the quick wait fails, fall back to the normal confirmation helper (with retries)
-                    console.log('Quick wait for top-up failed, falling back to waitForConfirmation:', err.message)
-                    await waitForConfirmation(provider, topUpResult.hash, 1)
-                }
+            if (balance1 < feeEstimate.fee * 2n) {
+                const topUp = feeEstimate.fee * 3n
+                console.log('Topping up account1 with', topUp, 'wei for gas')
+                await account0.sendTransaction({ to: await account1.getAddress(), value: topUp })
             }
 
-            console.log('Executing transferFrom...')
-            // Execute transferFrom from account1 (the spender)
-            const transferResult = await account1.sendTransaction(transferFromTx)
-            await waitForConfirmation(provider, transferResult.hash)
-
-            // Verify final balances
+            // Execute and verify
+            await account1.sendTransaction(transferFromTx)
             const finalBalance0 = await account0.getTokenBalance(TEST_TOKEN_ADDRESS)
             const finalBalance1 = await account1.getTokenBalance(TEST_TOKEN_ADDRESS)
 
             expect(finalBalance0).toBe(initialBalance0 - transferAmount)
             expect(finalBalance1).toBe(initialBalance1 + transferAmount)
-
-            console.log('Transfer completed successfully:', {
-                fromBalance: finalBalance0,
-                toBalance: finalBalance1,
-                amount: transferAmount
-            })
         }, CONFIG.timeout)
 
-        test('should reject transfer if configured transferMaxFee too low (simulate insufficient gas cap)', async () => {
-            // Create a wallet that enforces a very low max fee so transfers fail before sending
+        // --------------------------------------------------------
+        // ❌ Negative Test — Max Fee Too Low
+        // --------------------------------------------------------
+        test('should reject transfer if configured transferMaxFee too low', async () => {
             const lowFeeWallet = new WalletManagerEvm(TESTNET_SEED_PHRASE, {
                 provider: TESTNET_RPC_URL,
-                transferMaxFee: 1n // unrealistically low
+                transferMaxFee: 1n // unrealistic fee cap
             })
 
             const lowFeeAccount = await lowFeeWallet.getAccount(0)
-
-            // Ensure account has WETH; if none, skip
             const wethBal = await lowFeeAccount.getTokenBalance(TEST_TOKEN_ADDRESS)
+
             if (wethBal === 0n) {
-                console.log('Skipping low-fee transfer test: account has no WETH')
+                console.log('Skipping low-fee transfer test: no WETH balance')
                 return
             }
 
@@ -297,11 +264,14 @@ describe('Integration Tests on Sepolia', () => {
                 amount: 1n
             }
 
-            await expect(lowFeeAccount.transfer(transfer)).rejects.toThrow(/Exceeded maximum fee|max fee/i)
+            await expect(lowFeeAccount.transfer(transfer))
+                .rejects.toThrow(/Exceeded maximum fee|max fee/i)
         }, CONFIG.timeout)
 
+        // --------------------------------------------------------
+        // ❌ Negative Test — Withdraw Above Balance
+        // --------------------------------------------------------
         test('should revert withdraw when amount exceeds WETH balance', async () => {
-            // Use account1 for this negative test
             const bal = await account1.getTokenBalance(TEST_TOKEN_ADDRESS)
             const overdraw = bal + 1n
 
@@ -310,16 +280,19 @@ describe('Integration Tests on Sepolia', () => {
                 data: wethContract.interface.encodeFunctionData('withdraw', [overdraw])
             }
 
-            // Expect estimateGas to fail with a CALL_EXCEPTION for an over-withdraw
+            // Expect both estimateGas and sendTransaction to fail
             await expect(provider.estimateGas({ from: await account1.getAddress(), ...withdrawTx }))
                 .rejects.toMatchObject({ code: 'CALL_EXCEPTION' })
 
-            // Sending the transaction should also reject; assert the error mentions a revert or CALL_EXCEPTION
-            await expect(account1.sendTransaction(withdrawTx)).rejects.toThrow(/revert|CALL_EXCEPTION/i)
+            await expect(account1.sendTransaction(withdrawTx))
+                .rejects.toThrow(/revert|CALL_EXCEPTION/i)
         }, CONFIG.timeout)
 
+        // --------------------------------------------------------
+        // ❌ Negative Test — transferFrom Without Allowance
+        // --------------------------------------------------------
         test('should fail transferFrom when allowance insufficient', async () => {
-            // Ensure allowance is zero for this negative test
+            // Reset allowance to zero
             const zeroApproveTx = {
                 to: TEST_TOKEN_ADDRESS,
                 data: wethContract.interface.encodeFunctionData('approve', [
@@ -328,24 +301,21 @@ describe('Integration Tests on Sepolia', () => {
                 ])
             }
 
-            const zeroApproveResult = await account0.sendTransaction(zeroApproveTx)
-            await waitForConfirmation(provider, zeroApproveResult.hash)
-
+            await account0.sendTransaction(zeroApproveTx)
             const allowanceAfter = await wethContract.allowance(
                 await account0.getAddress(),
                 await account1.getAddress()
             )
             expect(allowanceAfter).toBe(0n)
 
-            // Ensure account1 has ETH to attempt transferFrom (so we test allowance rejection, not lack of gas)
+            // Ensure account1 has gas
             const account1Bal = await account1.getBalance()
             if (account1Bal === 0n) {
-                const fundTx = { to: await account1.getAddress(), value: 1000000000000000n } // 0.001 ETH
-                const fundResult = await account0.sendTransaction(fundTx)
-                await waitForConfirmation(provider, fundResult.hash)
+                const fundTx = { to: await account1.getAddress(), value: 1_000_000_000_000_000n } // 0.001 ETH
+                await account0.sendTransaction(fundTx)
             }
 
-            // Try transferFrom and expect revert due to insufficient allowance
+            // Attempt invalid transferFrom
             const transferFromTx = {
                 to: TEST_TOKEN_ADDRESS,
                 data: wethContract.interface.encodeFunctionData('transferFrom', [
@@ -359,16 +329,16 @@ describe('Integration Tests on Sepolia', () => {
         }, CONFIG.timeout)
     })
 
+    // --------------------------------------------------------
+    // Global Teardown — Clean up listeners
+    // --------------------------------------------------------
     afterAll(async () => {
-        // Remove any provider listeners to avoid "logging after tests are done" errors.
         try {
-            if (provider && typeof provider.removeAllListeners === 'function') provider.removeAllListeners()
-            if (wallet && wallet._provider && typeof wallet._provider.removeAllListeners === 'function') wallet._provider.removeAllListeners()
-            if (account0 && account0._provider && typeof account0._provider.removeAllListeners === 'function') account0._provider.removeAllListeners()
-            if (account1 && account1._provider && typeof account1._provider.removeAllListeners === 'function') account1._provider.removeAllListeners()
+            for (const target of [provider, wallet?._provider, account0?._provider, account1?._provider]) {
+                if (target && typeof target.removeAllListeners === 'function') target.removeAllListeners()
+            }
         } catch (e) {
-            // Best-effort cleanup — don't fail tests for teardown errors.
-            console.log('Teardown cleanup error (ignored):', e && e.message)
+            console.log('Teardown cleanup error (ignored):', e?.message)
         }
     })
 })
