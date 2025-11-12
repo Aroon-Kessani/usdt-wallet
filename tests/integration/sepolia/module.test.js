@@ -97,7 +97,7 @@ describe('Integration Tests on Sepolia', () => {
             }
 
             await account0.transfer(transfer)
-
+            await new Promise(res => setTimeout(res, 2000))
             const finalBalance0 = await account0.getTokenBalance(TEST_TOKEN_ADDRESS)
             const finalBalance1 = await account1.getTokenBalance(TEST_TOKEN_ADDRESS)
 
